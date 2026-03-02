@@ -14,7 +14,7 @@ import {
   Box,
   Tabs,
 } from '@mantine/core';
-import { IconPlayerPause, IconPlayerPlay, IconX, IconTemperature, IconVideo } from '@tabler/icons-react';
+import { IconPlayerPause, IconPlayerPlay, IconX, IconTemperature, IconVideo, IconRefresh } from '@tabler/icons-react';
 import { printersApi, createPrinterWebSocket } from '../api/client';
 import type { Printer, PrinterStatus } from '@shared/types';
 
@@ -229,13 +229,23 @@ export default function LiveMonitor() {
     <Stack gap="md">
       <Group justify="space-between">
         <Title order={2}>Live-Überwachung</Title>
-        <Select
-          placeholder="Drucker auswählen"
-          value={selectedPrinter?.toString()}
-          onChange={(v) => setSelectedPrinter(v ? parseInt(v) : null)}
-          data={printers.map((p) => ({ value: p.id.toString(), label: p.name }))}
-          style={{ width: 200 }}
-        />
+        <Group>
+          <Select
+            placeholder="Drucker auswählen"
+            value={selectedPrinter?.toString()}
+            onChange={(v) => setSelectedPrinter(v ? parseInt(v) : null)}
+            data={printers.map((p) => ({ value: p.id.toString(), label: p.name }))}
+            style={{ width: 200 }}
+          />
+          <Button
+            variant="light"
+            leftSection={<IconRefresh size={16} />}
+            onClick={fetchStatus}
+            disabled={!selectedPrinter}
+          >
+            Aktualisieren
+          </Button>
+        </Group>
       </Group>
 
       {!selectedPrinter || printers.length === 0 ? (
