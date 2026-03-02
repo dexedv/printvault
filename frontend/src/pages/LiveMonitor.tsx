@@ -96,9 +96,12 @@ export default function LiveMonitor() {
 
   // Fetch status via HTTP
   const fetchStatus = async () => {
+    console.log('[LiveMonitor] fetchStatus called, selectedPrinter:', selectedPrinter);
     if (!selectedPrinter) return;
     try {
+      console.log('[LiveMonitor] Calling getStatus API for printer:', selectedPrinter);
       const printerStatus = await printersApi.getStatus(selectedPrinter);
+      console.log('[LiveMonitor] Got status:', printerStatus);
       setStatus(printerStatus);
       setError(null);
 
@@ -118,7 +121,7 @@ export default function LiveMonitor() {
         });
       }
     } catch (err: any) {
-      console.error('Failed to fetch status:', err);
+      console.error('[LiveMonitor] Failed to fetch status:', err);
       setError(err.response?.data?.detail || err.message || 'Verbindung fehlgeschlagen');
       setStatus(null);
     }
