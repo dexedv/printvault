@@ -45,10 +45,24 @@ export default function Printers() {
     try {
       const data = await printersApi.list();
       setPrinters(data);
+      // Check connection status for all printers
+      checkAllConnections(data);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkAllConnections = async (printerList: Printer[]) => {
+    // Check connection status for all printers
+    for (const printer of printerList) {
+      try {
+        const result = await printersApi.connect(printer.id);
+        setConnectionStatus(prev => ({ ...prev, [printer.id]: result.connected }));
+      } catch {
+        setConnectionStatus(prev => ({ ...prev, [printer.id]: false }));
+      }
     }
   };
 
