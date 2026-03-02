@@ -11,6 +11,7 @@ from utils.file_utils import (
     get_file_type, generate_unique_filename, get_file_size_mb
 )
 from config import settings
+from api.routes.license import check_limit
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -51,6 +52,16 @@ async def upload_file(
     db: Session = Depends(get_db)
 ):
     """Upload a new file to the library"""
+    # Check license limit
+    current_count = len(db.exec(select(FileModel)).all())
+    limit_check = check_limit("files", current_count)
+
+    if not limit_check.get("allowed"):
+        raise HTTPException(
+            status_code=403,
+            detail=limit_check.get("error", "Limit erreicht")
+        )
+
     file_type = get_file_type(file.filename)
     unique_filename = generate_unique_filename(file.filename, settings.storage_path)
     file_path = settings.storage_path / unique_filename

@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from db.session import get_db
 from db.models import Order, Customer
+from api.routes.license import check_limit
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -125,6 +126,16 @@ def get_order(order_id: int, db: Session = Depends(get_db)):
 @router.post("", response_model=dict)
 def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     """Create a new order"""
+    # Check license limit
+    current_count = len(db.exec(select(Order)).all())
+    limit_check = check_limit("orders", current_count)
+
+    if not limit_check.get("allowed"):
+        raise HTTPException(
+            status_code=403,
+            detail=limit_check.get("error", "Limit erreicht")
+        )
+
     # Verify customer exists
     customer = db.get(Customer, order.customer_id)
     if not customer:

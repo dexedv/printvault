@@ -43,6 +43,7 @@ import {
 import { useFilamentsStore } from '../store';
 import { filamentsApi } from '../api/client';
 import type { Filament } from '@shared/types';
+import LimitExceededModal from '../components/LimitExceededModal';
 
 const MATERIALS = ['PLA', 'PETG', 'ABS', 'TPU', 'ASA', 'PC', 'PA', 'PVB', 'PP', 'PEI'];
 
@@ -90,6 +91,8 @@ export default function Filaments() {
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [editingFilament, setEditingFilament] = useState<Filament | null>(null);
   const [materialFilter, setMaterialFilter] = useState<string | null>(null);
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
+  const [limitInfo, setLimitInfo] = useState({ resource: 'filaments', current: 0, limit: 5 });
   const [formData, setFormData] = useState({
     material: 'PLA',
     color_name: '',
@@ -130,8 +133,20 @@ export default function Filaments() {
       }
       closeModal();
       resetForm();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      // Check if it's a limit error
+      if (err.response?.status === 403 && err.response?.data?.detail?.includes('Limit')) {
+        // Parse the error message to get current and limit
+        const msg = err.response.data.detail;
+        const match = msg.match(/bereits (\d+) von maximal (\d+)/);
+        setLimitInfo({
+          resource: 'filaments',
+          current: match ? parseInt(match[1]) : filaments.length,
+          limit: match ? parseInt(match[2]) : 5
+        });
+        setLimitModalOpen(true);
+      }
     }
   };
 
@@ -640,6 +655,14 @@ export default function Filaments() {
           50% { opacity: 0.6; }
         }
       `}</style>
+
+      <LimitExceededModal
+        opened={limitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
+        resource={limitInfo.resource}
+        current={limitInfo.current}
+        limit={limitInfo.limit}
+      />
     </Stack>
   );
 }

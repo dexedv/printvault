@@ -1,11 +1,12 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
 from datetime import datetime
 
 from db.session import get_db
 from db.models import Filament
+from api.routes.license import check_limit
 
 router = APIRouter(prefix="/filaments", tags=["filaments"])
 
@@ -77,6 +78,16 @@ def create_filament(
     db: Session = Depends(get_db)
 ):
     """Create a new filament"""
+    # Check license limit
+    current_count = db.exec(select(func.count(Filament.id)).select_from(Filament)).scalar() or 0
+    limit_check = check_limit("filaments", current_count)
+
+    if not limit_check.get("allowed"):
+        raise HTTPException(
+            status_code=403,
+            detail=limit_check.get("error", "Limit erreicht")
+        )
+
     remaining_weight = filament_data.remaining_weight_kg
     if remaining_weight is None:
         remaining_weight = filament_data.total_weight_kg

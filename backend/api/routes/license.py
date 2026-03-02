@@ -190,6 +190,46 @@ def verify_license_signature(license_key: str) -> dict:
         return {"valid": False, "error": f"Verifizierungsfehler: {str(e)}"}
 
 
+def check_limit(resource: str, current_count: int) -> dict:
+    """
+    Prüft ob das Limit für eine Ressource erreicht ist.
+    Gibt {'allowed': True} zurück wenn OK, sonst {'allowed': False, 'error': ...}
+    """
+    license_data = load_license()
+
+    # Default Free License
+    if not license_data:
+        tier = "free"
+    else:
+        result = verify_license_signature(license_data.get("license_key", ""))
+        if not result.get("valid"):
+            return {"allowed": False, "error": "Lizenz ungültig", "tier": "unknown"}
+        tier = result.get("tier", "free")
+
+    features = TIER_FEATURES.get(tier, TIER_FEATURES["free"])
+    limit_key = f"max_{resource}"
+
+    if limit_key not in features:
+        return {"allowed": True, "tier": tier}  # Kein Limit für diese Ressource
+
+    limit = features[limit_key]
+
+    # -1 means unlimited
+    if limit == -1:
+        return {"allowed": True, "tier": tier, "limit": "unlimited"}
+
+    if current_count >= limit:
+        return {
+            "allowed": False,
+            "error": f"Limit erreicht! Du hast bereits {current_count} von maximal {limit} {resource}. Upgrade auf Pro für unbegrenzte Nutzung.",
+            "tier": tier,
+            "current": current_count,
+            "limit": limit
+        }
+
+    return {"allowed": True, "tier": tier, "current": current_count, "limit": limit}
+
+
 # ============== ROUTES ==============
 
 @router.get("/status", response_model=LicenseStatusResponse)

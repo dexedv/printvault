@@ -11,6 +11,7 @@ from utils.file_utils import (
     get_file_type, generate_unique_filename, get_file_size_mb
 )
 from config import settings
+from api.routes.license import check_limit
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -64,6 +65,16 @@ def create_project(
     db: Session = Depends(get_db)
 ):
     """Create a new project"""
+    # Check license limit
+    current_count = len(db.exec(select(Project)).all())
+    limit_check = check_limit("projects", current_count)
+
+    if not limit_check.get("allowed"):
+        raise HTTPException(
+            status_code=403,
+            detail=limit_check.get("error", "Limit erreicht")
+        )
+
     tags_list = []
     if project_data.tags:
         tags_list = [t.strip() for t in project_data.tags.split(",") if t.strip()]

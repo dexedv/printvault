@@ -11,6 +11,7 @@ from db.models import Printer, PrintJob
 from utils.security import encryption
 from adapters.klipper import KlipperAdapter
 from config import settings
+from api.routes.license import check_limit
 
 router = APIRouter(prefix="/printers", tags=["printers"])
 
@@ -62,6 +63,16 @@ def create_printer(
     db: Session = Depends(get_db)
 ):
     """Add a new printer"""
+    # Check license limit
+    current_count = len(db.exec(select(Printer)).all())
+    limit_check = check_limit("printers", current_count)
+
+    if not limit_check.get("allowed"):
+        raise HTTPException(
+            status_code=403,
+            detail=limit_check.get("error", "Limit erreicht")
+        )
+
     # Encrypt API key
     encrypted_key = encryption.encrypt(printer_data.api_key) if printer_data.api_key else None
 
