@@ -23,6 +23,7 @@ import {
   UnstyledButton,
   Box,
   ThemeIcon,
+  Paper,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
@@ -33,6 +34,11 @@ import {
   IconAlertTriangle,
   IconX,
   IconPackage,
+  IconThermometer,
+  IconWeight,
+  IconBrandWindows,
+  IconStack2,
+  IconDroplet,
 } from '@tabler/icons-react';
 import { useFilamentsStore } from '../store';
 import { filamentsApi } from '../api/client';
@@ -53,26 +59,29 @@ const MATERIAL_COLORS: Record<string, string> = {
   PEI: '#ef4444',
 };
 
+const MATERIAL_GRADIENTS: Record<string, string> = {
+  PLA: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+  PETG: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+  ABS: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+  TPU: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
+  ASA: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)',
+  PC: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+  PA: 'linear-gradient(135deg, #84cc16 0%, #65a30d 100%)',
+  PVB: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+  PP: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+  PEI: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+};
+
 const COLOR_PALETTE = [
-  // Basic colors
   '#ffffff', '#000000', '#f3f4f6', '#d1d5db', '#9ca3af', '#6b7280', '#4b5563', '#374151',
-  // Red
   '#ef4444', '#fca5a5', '#f87171', '#dc2626', '#b91c1c', '#991b1b',
-  // Orange
   '#f97316', '#fdba74', '#fb923c', '#ea580c', '#c2410c',
-  // Yellow
   '#eab308', '#fde047', '#facc15', '#ca8a04', '#a16207',
-  // Green
   '#22c55e', '#86efac', '#4ade80', '#16a34a', '#15803d', '#166534',
-  // Blue
   '#3b82f6', '#93c5fd', '#60a5fa', '#2563eb', '#1d4ed8', '#1e40af',
-  // Purple
   '#a855f7', '#d8b4fe', '#c084fc', '#9333ea', '#7e22ce', '#6b21a8',
-  // Pink
   '#ec4899', '#f9a8d4', '#f472b6', '#db2777', '#be185d',
-  // Brown
   '#a16207', '#d97706', '#92400e', '#78350f', '#451a03',
-  // Special
   '#c0c0c0', '#808080', '#00ff00', '#00ffff', '#ff00ff',
 ];
 
@@ -191,71 +200,99 @@ export default function Filaments() {
   }
 
   return (
-    <Stack gap="md">
-      <Group justify="space-between">
-        <Title order={2}>Filamente</Title>
-        <Button leftSection={<IconPlus size={18} />} onClick={() => { resetForm(); openModal(); }}>
+    <Stack gap="lg">
+      {/* Header Section */}
+      <Group justify="space-between" align="center">
+        <Group gap="sm">
+          <ThemeIcon size={40} radius="md" variant="light" color="blue">
+            <IconStack2 size={24} />
+          </ThemeIcon>
+          <div>
+            <Title order={2} style={{ margin: 0 }}>Filamente</Title>
+            <Text size="sm" c="dimmed">{filaments.length} Filamente im Lager</Text>
+          </div>
+        </Group>
+        <Button leftSection={<IconPlus size={18} />} onClick={() => { resetForm(); openModal(); }} size="md">
           Filament hinzufügen
         </Button>
       </Group>
 
-      {/* Material Filter Buttons */}
-      <Group gap="xs">
-        <UnstyledButton
-          onClick={() => setMaterialFilter(null)}
-          style={{
-            padding: '6px 12px',
-            borderRadius: '16px',
-            background: materialFilter === null ? '#228be6' : '#f1f3f5',
-            color: materialFilter === null ? 'white' : '#495057',
-            fontWeight: 500,
-            fontSize: '13px',
-            transition: 'all 0.15s',
-          }}
-        >
-          Alle
-        </UnstyledButton>
-        {MATERIALS.map((material) => {
-          const count = filaments.filter(f => f.material === material).length;
-          if (count === 0) return null;
-          return (
-            <UnstyledButton
-              key={material}
-              onClick={() => setMaterialFilter(material)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '16px',
-                background: materialFilter === material ? '#228be6' : '#f1f3f5',
-                color: materialFilter === material ? 'white' : '#495057',
-                fontWeight: 500,
-                fontSize: '13px',
-                transition: 'all 0.15s',
-              }}
-            >
-              {material} ({count})
-            </UnstyledButton>
-          );
-        })}
-        {materialFilter && (
+      {/* Material Filter Pills */}
+      <Box>
+        <Group gap="xs" wrap="nowrap" style={{ overflowX: 'auto', paddingBottom: 8 }}>
           <UnstyledButton
             onClick={() => setMaterialFilter(null)}
             style={{
-              padding: '4px 8px',
-              borderRadius: '50%',
-              background: '#f1f3f5',
-              display: 'flex',
-              alignItems: 'center',
+              padding: '8px 16px',
+              borderRadius: 20,
+              background: materialFilter === null ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : '#f1f3f5',
+              color: materialFilter === null ? 'white' : '#495057',
+              fontWeight: 500,
+              fontSize: '13px',
+              transition: 'all 0.2s ease',
+              whiteSpace: 'nowrap',
+              boxShadow: materialFilter === null ? '0 4px 12px rgba(59, 130, 246, 0.4)' : 'none',
             }}
           >
-            <IconX size={14} />
+            Alle <Badge size="xs" ml={6} variant="filled" color={materialFilter === null ? 'white' : 'gray'}>{filaments.length}</Badge>
           </UnstyledButton>
-        )}
-      </Group>
+          {MATERIALS.map((material) => {
+            const count = filaments.filter(f => f.material === material).length;
+            if (count === 0) return null;
+            return (
+              <UnstyledButton
+                key={material}
+                onClick={() => setMaterialFilter(material)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 20,
+                  background: materialFilter === material ? MATERIAL_GRADIENTS[material] : '#f1f3f5',
+                  color: materialFilter === material ? 'white' : '#495057',
+                  fontWeight: 500,
+                  fontSize: '13px',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap',
+                  boxShadow: materialFilter === material ? `0 4px 12px ${MATERIAL_COLORS[material]}66` : 'none',
+                }}
+              >
+                {material} <Badge size="xs" ml={6} variant="filled" color={materialFilter === material ? 'white' : 'gray'}>{count}</Badge>
+              </UnstyledButton>
+            );
+          })}
+          {materialFilter && (
+            <UnstyledButton
+              onClick={() => setMaterialFilter(null)}
+              style={{
+                padding: 6,
+                borderRadius: '50%',
+                background: '#f1f3f5',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <IconX size={14} />
+            </UnstyledButton>
+          )}
+        </Group>
+      </Box>
 
       {filteredFilaments.length === 0 ? (
         <Center py="xl">
           <Stack align="center" gap="sm">
-            <Text c="dimmed">
+            <Box
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <IconPackage size={36} color="#94a3b8" />
+            </Box>
+            <Text c="dimmed" size="lg">
               {materialFilter
                 ? `Keine ${materialFilter} Filamente im Lager`
                 : 'Keine Filamente im Lager'}
@@ -266,11 +303,12 @@ export default function Filaments() {
           </Stack>
         </Center>
       ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4, xl: 5 }} spacing="md">
+        <SimpleGrid cols={{ base: 2, xs: 3, sm: 4, md: 5 }} spacing="md" verticalSpacing="md">
           {filteredFilaments.map((filament) => {
             const percent = getRemainingPercent(filament);
             const lowStock = isLowStock(filament);
             const materialColor = MATERIAL_COLORS[filament.material] || '#6b7280';
+            const materialGradient = MATERIAL_GRADIENTS[filament.material] || MATERIAL_GRADIENTS.PLA;
 
             return (
               <Card
@@ -278,121 +316,102 @@ export default function Filaments() {
                 padding={0}
                 withBorder
                 className={classes.filamentCard}
+                style={{
+                  overflow: 'hidden',
+                  borderRadius: 16,
+                  border: '1px solid #e2e8f0',
+                  transition: 'all 0.3s ease',
+                }}
               >
-                {/* Colored top bar with material */}
+                {/* Modern gradient header with glow effect */}
                 <Box
                   style={{
-                    height: '6px',
-                    background: `linear-gradient(90deg, ${materialColor} 0%, ${materialColor}cc 100%)`,
+                    height: 80,
+                    background: materialGradient,
+                    position: 'relative',
+                    overflow: 'hidden',
                   }}
-                />
-
-                <Box p="md">
-                  {/* Header with color swatch and material badge */}
-                  <Group justify="space-between" mb="md">
-                    <Group gap="sm">
-                      <Box
-                        style={{
-                          width: 48,
-                          height: 48,
-                          borderRadius: 12,
-                          background: filament.color_hex,
-                          border: '3px solid white',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <ColorSwatch color={filament.color_hex} size={28} />
-                      </Box>
-                      <div>
-                        <Text fw={600} size="md" lineClamp={1}>
-                          {filament.color_name}
-                        </Text>
-                        <Badge
-                          size="sm"
-                          variant="filled"
-                          color={materialColor}
-                          style={{ marginTop: 2 }}
-                        >
-                          {filament.material}
-                        </Badge>
-                      </div>
-                    </Group>
-                    <Menu shadow="md" width={150} position="bottom-end">
-                      <Menu.Target>
-                        <ActionIcon variant="subtle" color="gray" size="lg">
-                          <IconDotsVertical size={18} />
-                        </ActionIcon>
-                      </Menu.Target>
-                      <Menu.Dropdown>
-                        <Menu.Item leftSection={<IconEdit size={16} />} onClick={() => openEdit(filament)}>
-                          Bearbeiten
-                        </Menu.Item>
-                        <Menu.Divider />
-                        <Menu.Item
-                          color="red"
-                          leftSection={<IconTrash size={16} />}
-                          onClick={() => handleDelete(filament.id)}
-                        >
-                          Löschen
-                        </Menu.Item>
-                      </Menu.Dropdown>
-                    </Menu>
-                  </Group>
-
-                  {/* Weight info */}
+                >
+                  {/* Animated shine effect */}
                   <Box
-                    mb="sm"
-                    p="sm"
                     style={{
-                      background: '#f8fafc',
-                      borderRadius: 10,
+                      position: 'absolute',
+                      top: 0,
+                      left: '-100%',
+                      width: '200%',
+                      height: '100%',
+                      background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%)',
+                      animation: 'shine 3s infinite',
+                    }}
+                  />
+
+                  {/* Color preview circle with glow */}
+                  <Center style={{ height: '100%' }}>
+                    <Box
+                      style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: '50%',
+                        background: filament.color_hex,
+                        border: '3px solid rgba(255,255,255,0.9)',
+                        boxShadow: `0 4px 20px ${filament.color_hex}88, 0 0 40px ${filament.color_hex}44`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <ColorSwatch color={filament.color_hex} size={36} style={{ border: '1px solid rgba(255,255,255,0.3)' }} />
+                    </Box>
+                  </Center>
+
+                  {/* Material badge */}
+                  <Badge
+                    size="sm"
+                    variant="filled"
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      background: 'rgba(255,255,255,0.25)',
+                      backdropFilter: 'blur(4px)',
+                      border: '1px solid rgba(255,255,255,0.3)',
+                      color: 'white',
+                      fontWeight: 600,
                     }}
                   >
-                    <Group justify="space-between" mb="xs">
-                      <Group gap="xs">
-                        <IconPackage size={16} color="#64748b" />
-                        <Text size="xs" c="dimmed" tt="uppercase" fw={500}>Bestand</Text>
-                      </Group>
-                      {lowStock && (
-                        <Badge size="xs" color="orange" variant="light" leftSection={<IconAlertTriangle size={10} />}>
-                          Niedrig
-                        </Badge>
-                      )}
-                    </Group>
-                    <Group justify="space-between" align="flex-end">
-                      <Text fw={700} size="lg" style={{ color: materialColor }}>
-                        {filament.remaining_weight_kg.toFixed(2)} kg
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        von {filament.total_weight_kg} kg
-                      </Text>
-                    </Group>
-                  </Box>
+                    {filament.material}
+                  </Badge>
 
-                  {/* Progress bar */}
-                  <Box mb="sm">
-                    <Group justify="space-between" mb={4}>
-                      <Text size="xs" c="dimmed">Füllstand</Text>
-                      <Text size="xs" fw={600} c={lowStock ? 'orange' : materialColor}>
-                        {percent.toFixed(0)}%
-                      </Text>
-                    </Group>
-                    <Progress
-                      value={percent}
-                      color={lowStock ? 'orange' : materialColor}
-                      size="md"
-                      radius="xl"
-                      animated={lowStock}
-                    />
-                  </Box>
+                  {/* Low stock warning */}
+                  {lowStock && (
+                    <Badge
+                      size="xs"
+                      variant="filled"
+                      color="red"
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        left: 8,
+                        animation: 'pulse 2s infinite',
+                      }}
+                      leftSection={<IconAlertTriangle size={10} />}
+                    >
+                      Niedrig
+                    </Badge>
+                  )}
+                </Box>
+
+                {/* Content */}
+                <Box p="md">
+                  {/* Filament name */}
+                  <Text fw={700} size="lg" mb="xs" lineClamp={1} style={{ color: '#1e293b' }}>
+                    {filament.color_name}
+                  </Text>
 
                   {/* Vendor and location */}
-                  <Group gap="xs" mt="xs">
+                  <Group gap="xs" mb="md">
                     {filament.vendor && (
-                      <Badge variant="outline" color="gray" size="sm">
+                      <Badge variant="outline" color="gray" size="sm" style={{ borderColor: '#e2e8f0' }}>
                         {filament.vendor}
                       </Badge>
                     )}
@@ -402,6 +421,88 @@ export default function Filaments() {
                       </Badge>
                     )}
                   </Group>
+
+                  {/* Weight info card */}
+                  <Paper
+                    p="sm"
+                    style={{
+                      background: '#f8fafc',
+                      borderRadius: 12,
+                      border: '1px solid #f1f5f9',
+                    }}
+                  >
+                    <Group justify="space-between" align="flex-end" mb="xs">
+                      <div>
+                        <Group gap={4}>
+                          <IconWeight size={14} color="#64748b" />
+                          <Text size="xs" c="dimmed" tt="uppercase" fw={500}>Gewicht</Text>
+                        </Group>
+                        <Text fw={700} size="xl" style={{ color: materialColor, lineHeight: 1.2 }}>
+                          {filament.remaining_weight_kg.toFixed(2)}
+                          <Text span size="sm" fw={400} c="dimmed"> kg</Text>
+                        </Text>
+                      </div>
+                      <Text size="xs" c="dimmed">
+                        von {filament.total_weight_kg} kg
+                      </Text>
+                    </Group>
+
+                    {/* Progress bar with gradient */}
+                    <Box mt="xs">
+                      <Group justify="space-between" mb={4}>
+                        <Text size="xs" c="dimmed">Füllstand</Text>
+                        <Text size="xs" fw={600} style={{ color: lowStock ? '#f97316' : materialColor }}>
+                          {percent.toFixed(0)}%
+                        </Text>
+                      </Group>
+                      <Progress
+                        value={percent}
+                        color={lowStock ? 'orange' : materialColor}
+                        size="sm"
+                        radius="xl"
+                        animated={lowStock}
+                        style={{
+                          background: '#e2e8f0',
+                        }}
+                      />
+                    </Box>
+                  </Paper>
+
+                  {/* Action menu */}
+                  <Menu shadow="lg" width={160} position="bottom-end" withArrow>
+                    <Menu.Target>
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        size="lg"
+                        style={{
+                          position: 'absolute',
+                          bottom: 12,
+                          right: 12,
+                        }}
+                      >
+                        <IconDotsVertical size={18} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown style={{ border: '1px solid #e2e8f0' }}>
+                      <Menu.Item
+                        leftSection={<IconEdit size={16} />}
+                        onClick={() => openEdit(filament)}
+                        style={{ borderRadius: 8 }}
+                      >
+                        Bearbeiten
+                      </Menu.Item>
+                      <Menu.Divider />
+                      <Menu.Item
+                        color="red"
+                        leftSection={<IconTrash size={16} />}
+                        onClick={() => handleDelete(filament.id)}
+                        style={{ borderRadius: 8 }}
+                      >
+                        Löschen
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
                 </Box>
               </Card>
             );
@@ -409,22 +510,41 @@ export default function Filaments() {
         </SimpleGrid>
       )}
 
-      <Modal opened={modalOpened} onClose={closeModal} title={editingFilament ? 'Edit Filament' : 'Add Filament'} centered>
+      {/* Add/Edit Modal */}
+      <Modal
+        opened={modalOpened}
+        onClose={closeModal}
+        title={
+          <Group gap="sm">
+            <ThemeIcon size={24} radius="xl" variant="light" color="blue">
+              <IconPlus size={14} />
+            </ThemeIcon>
+            <Text fw={600}>{editingFilament ? 'Filament bearbeiten' : 'Neues Filament'}</Text>
+          </Group>
+        }
+        centered
+        size="md"
+      >
         <Stack>
-          <Select
-            label="Material"
-            data={MATERIALS}
-            value={formData.material}
-            onChange={(v) => setFormData({ ...formData, material: v || 'PLA' })}
-            required
-          />
-          <TextInput
-            label="Color Name"
-            placeholder="e.g., Midnight Blue"
-            value={formData.color_name}
-            onChange={(e) => setFormData({ ...formData, color_name: e.target.value })}
-            required
-          />
+          <Group grow>
+            <Select
+              label="Material"
+              data={MATERIALS}
+              value={formData.material}
+              onChange={(v) => setFormData({ ...formData, material: v || 'PLA' })}
+              required
+              leftSection={<IconThermometer size={16} />}
+            />
+            <TextInput
+              label="Farbname"
+              placeholder="z.B. Midnight Blue"
+              value={formData.color_name}
+              onChange={(e) => setFormData({ ...formData, color_name: e.target.value })}
+              required
+              leftSection={<IconDroplet size={16} />}
+            />
+          </Group>
+
           <Group align="flex-end">
             <TextInput
               label="Farbe"
@@ -432,11 +552,12 @@ export default function Filaments() {
               value={formData.color_hex}
               onChange={(e) => setFormData({ ...formData, color_hex: e.target.value })}
               style={{ flex: 1 }}
+              leftSection={<IconDroplet size={16} />}
             />
-            <Popover width={340} position="bottom" withArrow shadow="md">
+            <Popover width={360} position="bottom" withArrow shadow="lg">
               <Popover.Target>
-                <ActionIcon size="lg" variant="default" mt={24}>
-                  <ColorSwatch color={formData.color_hex} size={18} />
+                <ActionIcon size="xl" variant="filled" radius="md" style={{ background: formData.color_hex }}>
+                  <ColorSwatch color={formData.color_hex} size={22} />
                 </ActionIcon>
               </Popover.Target>
               <Popover.Dropdown>
@@ -447,62 +568,78 @@ export default function Filaments() {
                       key={color}
                       onClick={() => setFormData({ ...formData, color_hex: color })}
                       style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 4,
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
                         backgroundColor: color,
-                        border: formData.color_hex === color ? '2px solid #228be6' : '1px solid #dee2e6',
+                        border: formData.color_hex === color ? '3px solid #228be6' : '1px solid #dee2e6',
                         cursor: 'pointer',
+                        transition: 'transform 0.15s ease',
                       }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.15)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     />
                   ))}
                 </Group>
-                <TextInput
-                  placeholder="Eigene Farbe"
-                  value={formData.color_hex}
-                  onChange={(e) => setFormData({ ...formData, color_hex: e.target.value })}
-                  mt="sm"
-                  size="xs"
-                />
               </Popover.Dropdown>
             </Popover>
           </Group>
-          <NumberInput
-            label="Total Weight (kg)"
-            min={0.1}
-            step={0.1}
-            value={formData.total_weight_kg}
-            onChange={(v) => setFormData({ ...formData, total_weight_kg: Number(v) || 1 })}
-          />
-          <NumberInput
-            label="Remaining Weight (kg)"
-            min={0}
-            step={0.01}
-            value={formData.remaining_weight_kg}
-            onChange={(v) => setFormData({ ...formData, remaining_weight_kg: Number(v) || 0 })}
-          />
-          <TextInput
-            label="Vendor"
-            placeholder="e.g., Hatchbox, Prusament"
-            value={formData.vendor}
-            onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
-          />
-          <TextInput
-            label="Location"
-            placeholder="e.g., Shelf A, Bin 3"
-            value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-          />
+
+          <Group grow>
+            <NumberInput
+              label="Gesamtgewicht (kg)"
+              min={0.1}
+              step={0.1}
+              value={formData.total_weight_kg}
+              onChange={(v) => setFormData({ ...formData, total_weight_kg: Number(v) || 1 })}
+              leftSection={<IconWeight size={16} />}
+            />
+            <NumberInput
+              label="Verbleibend (kg)"
+              min={0}
+              step={0.01}
+              value={formData.remaining_weight_kg}
+              onChange={(v) => setFormData({ ...formData, remaining_weight_kg: Number(v) || 0 })}
+              leftSection={<IconPackage size={16} />}
+            />
+          </Group>
+
+          <Group grow>
+            <TextInput
+              label="Hersteller"
+              placeholder="z.B. Hatchbox, Prusament"
+              value={formData.vendor}
+              onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
+            />
+            <TextInput
+              label="Lagerort"
+              placeholder="z.B. Regal A, Schublade 3"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+            />
+          </Group>
+
           <Group justify="flex-end" mt="md">
             <Button variant="light" onClick={closeModal}>
-              Cancel
+              Abbrechen
             </Button>
             <Button onClick={handleSubmit} disabled={!formData.color_name}>
-              {editingFilament ? 'Save' : 'Add'}
+              {editingFilament ? 'Speichern' : 'Hinzufügen'}
             </Button>
           </Group>
         </Stack>
       </Modal>
+
+      <style>{`
+        @keyframes shine {
+          0% { transform: translateX(-50%); }
+          100% { transform: translateX(50%); }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+      `}</style>
     </Stack>
   );
 }

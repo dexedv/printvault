@@ -190,7 +190,7 @@ export default function Extensions() {
       </Group>
 
       {/* Extension Cards */}
-      <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }}>
+      <SimpleGrid cols={{ base: 2, xs: 3, sm: 4, md: 5, lg: 6 }} spacing="md" verticalSpacing="md">
         {extensions.map((ext) => (
           <Card key={ext.id} padding="md" withBorder>
             <Group justify="space-between" mb="xs">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { TextInput, SimpleGrid, Card, Image, Text, Badge, ActionIcon, Menu, Select, Stack, Loader, Center, Box, Modal, Button, Group } from '@mantine/core';
+import { TextInput, SimpleGrid, Card, Image, Text, Badge, ActionIcon, Menu, Select, Stack, Loader, Center, Box, Modal, Button, Group, ThemeIcon, Paper } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   IconUpload,
@@ -11,11 +11,29 @@ import {
   IconFilter,
   IconFile,
   Icon3dCubeSphere,
+  IconStack2,
+  IconFileTypeSvg,
+  IconBox,
+  IconCube,
 } from '@tabler/icons-react';
 import { useFilesStore } from '../store';
 import { filesApi } from '../api/client';
 import ModelViewer from '../components/ModelViewer';
 import classes from './Library.module.css';
+
+const FILE_TYPE_GRADIENTS: Record<string, string> = {
+  stl: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+  '3mf': 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+  gcode: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+  step: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+};
+
+const FILE_TYPE_COLORS: Record<string, string> = {
+  stl: '#3b82f6',
+  '3mf': '#22c55e',
+  gcode: '#f97316',
+  step: '#8b5cf6',
+};
 
 export default function Library() {
   const { files, loading, error, searchQuery, setFiles, setLoading, setError, setSearchQuery, addFile, removeFile } = useFilesStore();
@@ -41,7 +59,6 @@ export default function Library() {
   }, []);
 
   const handleUpload = async () => {
-    // Use Tauri/Electron file dialog if available
     if (window.electronAPI) {
       const result = await window.electronAPI.openFile({
         filters: [
@@ -68,7 +85,6 @@ export default function Library() {
         setUploading(false);
       }
     } else {
-      // Fallback: Create hidden file input for browser/web mode
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = '.stl,.3mf,.gcode,.step';
@@ -114,15 +130,8 @@ export default function Library() {
     return `${bytes.toFixed(2)} MB`;
   };
 
-  const getFileTypeColor = (type: string) => {
-    const colors: Record<string, string> = {
-      stl: 'blue',
-      '3mf': 'green',
-      gcode: 'orange',
-      step: 'purple',
-    };
-    return colors[type] || 'gray';
-  };
+  const getFileTypeColor = (type: string) => FILE_TYPE_COLORS[type] || '#6b7280';
+  const getFileTypeGradient = (type: string) => FILE_TYPE_GRADIENTS[type] || FILE_TYPE_GRADIENTS.stl;
 
   if (loading) {
     return (
@@ -134,15 +143,23 @@ export default function Library() {
 
   return (
     <Stack gap="lg">
-      {/* Header */}
-      <Group justify="space-between">
-        <Text size="xl" fw={700} c="dark">Dateibibliothek</Text>
-        <Button leftSection={<IconUpload size={18} />} onClick={handleUpload} loading={uploading}>
+      {/* Header Section */}
+      <Group justify="space-between" align="center">
+        <Group gap="sm">
+          <ThemeIcon size={40} radius="md" variant="light" color="blue">
+            <IconStack2 size={24} />
+          </ThemeIcon>
+          <div>
+            <Text size="xl" fw={700} c="dark">Dateibibliothek</Text>
+            <Text size="sm" c="dimmed">{files.length} Dateien</Text>
+          </div>
+        </Group>
+        <Button leftSection={<IconUpload size={18} />} onClick={handleUpload} loading={uploading} size="md">
           Dateien hochladen
         </Button>
       </Group>
 
-      {/* Filters */}
+      {/* Search and Filters */}
       <Group>
         <TextInput
           placeholder="Dateien suchen..."
@@ -150,6 +167,7 @@ export default function Library() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           style={{ width: 300 }}
+          radius="md"
         />
         <Select
           placeholder="Nach Typ filtern"
@@ -164,6 +182,7 @@ export default function Library() {
             { value: 'step', label: 'STEP' },
           ]}
           style={{ width: 180 }}
+          radius="md"
         />
       </Group>
 
@@ -173,8 +192,19 @@ export default function Library() {
       {filteredFiles.length === 0 ? (
         <Center py="xl">
           <Stack align="center" gap="md" p="xl">
-            <Box className={classes.emptyIcon} style={{ width: 80, height: 80 }}>
-              <Icon3dCubeSphere size={36} color="#94a3b8" />
+            <Box
+              style={{
+                width: 100,
+                height: 100,
+                borderRadius: 24,
+                background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+              }}
+            >
+              <Icon3dCubeSphere size={48} color="#94a3b8" />
             </Box>
             <Text c="dimmed" size="lg">Keine Dateien in der Bibliothek</Text>
             <Button variant="light" onClick={handleUpload}>
@@ -183,35 +213,102 @@ export default function Library() {
           </Stack>
         </Center>
       ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4, xl: 5 }} spacing="md">
+        <SimpleGrid cols={{ base: 2, xs: 3, sm: 4, md: 5 }} spacing="md" verticalSpacing="md">
           {filteredFiles.map((file) => {
             const typeColor = getFileTypeColor(file.file_type);
+            const typeGradient = getFileTypeGradient(file.file_type);
+
             return (
-              <Card key={file.id} padding={0} withBorder className={classes.card}>
-                {/* Colored top bar */}
-                <Box style={{
-                  height: '6px',
-                  background: typeColor === 'blue' ? 'linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%)'
-                    : typeColor === 'green' ? 'linear-gradient(90deg, #22c55e 0%, #4ade80 100%)'
-                    : typeColor === 'orange' ? 'linear-gradient(90deg, #f97316 0%, #fb923c 100%)'
-                    : 'linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%)',
-                }} />
+              <Card
+                key={file.id}
+                padding={0}
+                withBorder
+                className={classes.card}
+                style={{
+                  overflow: 'hidden',
+                  borderRadius: 16,
+                  border: '1px solid #e2e8f0',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                {/* Gradient header with icon */}
+                <Box
+                  style={{
+                    height: 80,
+                    background: typeGradient,
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <Box
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: '-100%',
+                      width: '200%',
+                      height: '100%',
+                      background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%)',
+                      animation: 'shine 3s infinite',
+                    }}
+                  />
+
+                  <Center style={{ height: '100%' }}>
+                    <Box
+                      style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: 16,
+                        background: 'rgba(255,255,255,0.2)',
+                        backdropFilter: 'blur(4px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {file.file_type === 'stl' && <IconCube size={32} color="white" />}
+                      {file.file_type === '3mf' && <IconBox size={32} color="white" />}
+                      {file.file_type === 'gcode' && <IconFileTypeSvg size={32} color="white" />}
+                      {file.file_type === 'step' && <Icon3dCubeSphere size={32} color="white" />}
+                    </Box>
+                  </Center>
+
+                  <Badge
+                    size="sm"
+                    variant="filled"
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      background: 'rgba(255,255,255,0.25)',
+                      backdropFilter: 'blur(4px)',
+                      border: '1px solid rgba(255,255,255,0.3)',
+                      color: 'white',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {file.file_type.toUpperCase()}
+                  </Badge>
+                </Box>
 
                 {/* Thumbnail */}
-                <Box style={{
-                  height: 160,
-                  background: '#f8fafc',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  position: 'relative'
-                }} onClick={() => { setSelectedFile(file); openViewer(); }}>
+                <Box
+                  style={{
+                    height: 140,
+                    background: '#f8fafc',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    borderBottom: '1px solid #f1f5f9',
+                  }}
+                  onClick={() => { setSelectedFile(file); openViewer(); }}
+                >
                   {file.thumbnail_path ? (
                     <Image
                       src={`http://localhost:8000/${file.thumbnail_path}`}
                       alt={file.original_name}
-                      h={160}
+                      h={140}
                       fit="cover"
                       w="100%"
                       className={classes.thumbnail}
@@ -219,43 +316,62 @@ export default function Library() {
                   ) : (
                     <Icon3dCubeSphere size={48} color="#cbd5e1" />
                   )}
+                  <Box
+                    style={{
+                      position: 'absolute',
+                      bottom: 8,
+                      right: 8,
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      background: 'rgba(0,0,0,0.5)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <IconEye size={16} color="white" />
+                  </Box>
                 </Box>
 
                 {/* Info */}
                 <Box p="md">
-                  <Group justify="space-between" mb="xs">
-                    <Text fw={600} size="sm" style={{ flex: 1 }} truncate>
-                      {file.original_name}
-                    </Text>
-                    <Badge size="sm" color={typeColor} variant="filled">
-                      {file.file_type.toUpperCase()}
-                    </Badge>
-                  </Group>
-                  <Group gap="xs" mb="xs">
-                    <Text size="xs" c="dimmed">{formatFileSize(file.file_size)}</Text>
-                    {file.triangle_count && (
-                      <>
-                        <Text size="xs" c="dimmed">•</Text>
-                        <Text size="xs" c="dimmed">{file.triangle_count.toLocaleString()} tris</Text>
-                      </>
-                    )}
-                  </Group>
-                  {file.volume && (
-                    <Text size="xs" c="dimmed">Volumen: {(file.volume / 1000).toFixed(2)} cm³</Text>
-                  )}
+                  <Text fw={600} size="sm" mb="xs" lineClamp={1} style={{ color: '#1e293b' }}>
+                    {file.original_name}
+                  </Text>
 
-                  {/* Actions */}
-                  <Menu shadow="md" width={150} position="bottom-end">
+                  <Paper p="xs" style={{ background: '#f8fafc', borderRadius: 8, marginBottom: 8 }}>
+                    <Group gap="xs">
+                      <Text size="xs" c="dimmed">{formatFileSize(file.file_size)}</Text>
+                      {file.triangle_count && (
+                        <>
+                          <Text size="xs" c="dimmed">•</Text>
+                          <Text size="xs" c="dimmed">{file.triangle_count.toLocaleString()} tris</Text>
+                        </>
+                      )}
+                    </Group>
+                    {file.volume && (
+                      <Text size="xs" c="dimmed">Volumen: {(file.volume / 1000).toFixed(2)} cm³</Text>
+                    )}
+                  </Paper>
+
+                  <Menu shadow="lg" width={150} position="bottom-end" withArrow>
                     <Menu.Target>
                       <ActionIcon variant="subtle" color="gray" size="sm" style={{ position: 'absolute', bottom: 12, right: 12 }}>
                         <IconDotsVertical size={16} />
                       </ActionIcon>
                     </Menu.Target>
-                    <Menu.Dropdown>
-                      <Menu.Item leftSection={<IconEye size={14} />} onClick={() => { setSelectedFile(file); openViewer(); }}>Vorschau</Menu.Item>
-                      <Menu.Item leftSection={<IconDownload size={14} />}>Herunterladen</Menu.Item>
+                    <Menu.Dropdown style={{ border: '1px solid #e2e8f0' }}>
+                      <Menu.Item leftSection={<IconEye size={14} />} onClick={() => { setSelectedFile(file); openViewer(); }}>
+                        Vorschau
+                      </Menu.Item>
+                      <Menu.Item leftSection={<IconDownload size={14} />}>
+                        Herunterladen
+                      </Menu.Item>
                       <Menu.Divider />
-                      <Menu.Item color="red" leftSection={<IconTrash size={14} />} onClick={() => handleDelete(file.id)}>Löschen</Menu.Item>
+                      <Menu.Item color="red" leftSection={<IconTrash size={14} />} onClick={() => handleDelete(file.id)}>
+                        Löschen
+                      </Menu.Item>
                     </Menu.Dropdown>
                   </Menu>
                 </Box>
@@ -275,22 +391,29 @@ export default function Library() {
             <div>
               <Text size="sm" c="dimmed">Abmessungen</Text>
               {selectedFile.bounding_box && (
-                <Text size="sm">
+                <Text size="sm" fw={500}>
                   {selectedFile.bounding_box.dimensions[0].toFixed(1)} x {selectedFile.bounding_box.dimensions[1].toFixed(1)} x {selectedFile.bounding_box.dimensions[2].toFixed(1)} mm
                 </Text>
               )}
             </div>
             <div>
               <Text size="sm" c="dimmed">Volumen</Text>
-              <Text size="sm">{selectedFile.volume ? (selectedFile.volume / 1000).toFixed(2) : '-'} cm³</Text>
+              <Text size="sm" fw={500}>{selectedFile.volume ? (selectedFile.volume / 1000).toFixed(2) : '-'} cm³</Text>
             </div>
             <div>
               <Text size="sm" c="dimmed">Dreiecke</Text>
-              <Text size="sm">{selectedFile.triangle_count ? selectedFile.triangle_count.toLocaleString() : '-'}</Text>
+              <Text size="sm" fw={500}>{selectedFile.triangle_count ? selectedFile.triangle_count.toLocaleString() : '-'}</Text>
             </div>
           </Group>
         )}
       </Modal>
+
+      <style>{`
+        @keyframes shine {
+          0% { transform: translateX(-50%); }
+          100% { transform: translateX(50%); }
+        }
+      `}</style>
     </Stack>
   );
 }
