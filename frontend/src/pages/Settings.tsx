@@ -176,7 +176,34 @@ export default function Settings() {
     setCheckingUpdate(true);
     setUpdateError(null);
 
-    // Try Tauri updater first
+    // Check via GitHub API (works with private repos if user has access)
+    try {
+      const response = await fetch('https://api.github.com/repos/dexedv/printvault/releases/latest', {
+        headers: {
+          'Accept': 'application/vnd.github+json',
+          'User-Agent': 'PrintVault'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const latestVersion = data.tag_name?.replace('v', '') || data.name;
+
+        // Compare versions (simple string comparison)
+        if (latestVersion > appVersion) {
+          setUpdateAvailable({
+            version: latestVersion,
+            releaseDate: data.published_at || new Date().toISOString()
+          });
+          setCheckingUpdate(false);
+          return;
+        }
+      }
+    } catch (e) {
+      console.log('GitHub API check failed:', e);
+    }
+
+    // Fallback to Tauri updater (for public repos)
     try {
       const { check } = await import('@tauri-apps/plugin-updater');
       const update = await check();
@@ -186,25 +213,21 @@ export default function Settings() {
           releaseDate: new Date().toISOString()
         });
       }
-      setCheckingUpdate(false);
-      return;
     } catch (e) {
-      // Not in Tauri or updater not available
       console.log('Tauri updater not available:', e);
     }
 
-    // Fallback to Electron API
-    if (window.electronAPI) {
-      const result = await window.electronAPI.checkForUpdates();
-      if (!result) {
-        setCheckingUpdate(false);
-      }
-    } else {
-      setCheckingUpdate(false);
-    }
+    setCheckingUpdate(false);
   };
 
   const downloadUpdate = async () => {
+    // For GitHub private repos, open release page in browser
+    if (updateAvailable) {
+      window.open('https://github.com/dexedv/printvault/releases', '_blank');
+      setUpdateError('Bitte manuell herunterladen von GitHub');
+      return;
+    }
+
     // Try Tauri updater first
     try {
       const { check } = await import('@tauri-apps/plugin-updater');
@@ -238,6 +261,12 @@ export default function Settings() {
   };
 
   const installUpdate = () => {
+    // Open GitHub releases for manual download
+    if (updateAvailable) {
+      window.open('https://github.com/dexedv/printvault/releases', '_blank');
+      return;
+    }
+
     // Tauri handles this automatically after download
     if (window.electronAPI) {
       window.electronAPI.installUpdate();
