@@ -15,7 +15,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import platform
 
-router = APIRouter()
+router = APIRouter(prefix="/license")
 
 # ============== KONFIGURATION ==============
 
