@@ -76,6 +76,7 @@ export default function LiveMonitor() {
   const [activeTab, setActiveTab] = useState<string | null>('webcam');
   const [temperatureHistory, setTemperatureHistory] = useState<Array<{ time: number; extruder: number; bed: number }>>([]);
   const [error, setError] = useState<string | null>(null);
+  const [webcamUrl, setWebcamUrl] = useState<string>('');
   const pollingRef = useRef<number | null>(null);
 
   const loadPrinters = async () => {
@@ -89,6 +90,20 @@ export default function LiveMonitor() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadWebcamUrl = async (printerId: number) => {
+    try {
+      const webcam = await printersApi.getWebcam(printerId);
+      if (webcam.enabled && (webcam.stream_url || webcam.url)) {
+        setWebcamUrl(webcam.stream_url || webcam.url);
+      } else {
+        setWebcamUrl('');
+      }
+    } catch (err) {
+      console.error('Failed to get webcam:', err);
+      setWebcamUrl('');
     }
   };
 
@@ -139,6 +154,7 @@ export default function LiveMonitor() {
 
     // Fetch initial status
     fetchStatus();
+    loadWebcamUrl(selectedPrinter);
 
     // Poll every 2 seconds
     pollingRef.current = window.setInterval(fetchStatus, 2000);
@@ -244,11 +260,20 @@ export default function LiveMonitor() {
                         justifyContent: 'center',
                       }}
                     >
-                      <Text c="dimmed">
-                        Webcam-Stream wird hier angezeigt
-                        <br />
-                        <Text size="xs">Konfigurieren Sie die Webcam-URL in den Drucker-Einstellungen</Text>
-                      </Text>
+                      {webcamUrl ? (
+                        <iframe
+                          src={webcamUrl}
+                          style={{ width: '100%', height: '100%', border: 'none', borderRadius: 8 }}
+                          allow="camera; microphone; fullscreen; picture-in-picture"
+                          title="Webcam Stream"
+                        />
+                      ) : (
+                        <Text c="dimmed">
+                          Webcam-Stream wird hier angezeigt
+                          <br />
+                          <Text size="xs">Keine Webcam konfiguriert oder automatisch von Klipper abgerufen</Text>
+                        </Text>
+                      )}
                     </Box>
                   </Tabs.Panel>
 

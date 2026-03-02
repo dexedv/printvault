@@ -110,6 +110,37 @@ class KlipperAdapter:
             except asyncio.CancelledError:
                 pass
 
+    async def get_webcam_info(self) -> Dict[str, Any]:
+        """Get webcam information from Moonraker"""
+        try:
+            # Try new Moonraker API
+            webcam_info = await self.client.get("/webcam/list")
+            if webcam_info and "webcams" in webcam_info and len(webcam_info["webcams"]) > 0:
+                cam = webcam_info["webcams"][0]
+                return {
+                    "url": cam.get("url", ""),
+                    "stream_url": cam.get("stream_url", ""),
+                    "name": cam.get("name", "Webcam"),
+                    "enabled": cam.get("enabled", True)
+                }
+        except Exception as e:
+            print(f"Failed to get webcam info: {e}")
+
+        # Fallback: try legacy endpoint
+        try:
+            info = await self.client.get("/machine/webcam/info")
+            if info:
+                return {
+                    "url": info.get("webcam", {}).get("url", ""),
+                    "stream_url": info.get("webcam", {}).get("stream_url", ""),
+                    "name": info.get("webcam", {}).get("name", "Webcam"),
+                    "enabled": True
+                }
+        except Exception as e:
+            print(f"Failed to get legacy webcam info: {e}")
+
+        return {"url": "", "stream_url": "", "name": "Webcam", "enabled": False}
+
     async def get_status(self) -> Dict[str, Any]:
         """Get printer status from Moonraker"""
         try:

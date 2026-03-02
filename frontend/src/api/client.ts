@@ -181,6 +181,9 @@ export const printersApi = {
 
   getStatus: (id: number) =>
     apiClient.get<PrinterStatus>(`/printers/${id}/status`).then((r) => r.data),
+
+  getWebcam: (id: number) =>
+    apiClient.get<{ url: string; stream_url: string; name: string; enabled: boolean }>(`/printers/${id}/webcam`).then((r) => r.data),
 };
 
 // Jobs API

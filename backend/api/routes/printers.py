@@ -195,3 +195,35 @@ async def get_printer_status(printer_id: int, db: Session = Depends(get_db)):
         return status
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{printer_id}/webcam")
+async def get_printer_webcam(printer_id: int, db: Session = Depends(get_db)):
+    """Get webcam info from printer"""
+    printer = db.get(Printer, printer_id)
+    if not printer:
+        raise HTTPException(status_code=404, detail="Printer not found")
+
+    # First return stored webcam URL if available
+    if printer.webcam_url:
+        return {
+            "url": printer.webcam_url,
+            "stream_url": printer.webcam_url,
+            "name": "Webcam",
+            "enabled": True,
+            "source": "stored"
+        }
+
+    # Try to get from Klipper/Moonraker
+    if printer.printer_type != "klipper":
+        return {"url": "", "stream_url": "", "name": "Webcam", "enabled": False, "source": "none"}
+
+    api_key = encryption.decrypt(printer.api_key) if printer.api_key else None
+
+    try:
+        adapter = KlipperAdapter(printer.host, printer.port, api_key)
+        webcam_info = await adapter.get_webcam_info()
+        webcam_info["source"] = "printer"
+        return webcam_info
+    except Exception as e:
+        return {"url": "", "stream_url": "", "name": "Webcam", "enabled": False, "source": "error", "error": str(e)}
