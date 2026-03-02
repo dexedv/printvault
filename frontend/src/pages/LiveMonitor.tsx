@@ -15,7 +15,7 @@ import {
   Tabs,
 } from '@mantine/core';
 import { IconPlayerPause, IconPlayerPlay, IconX, IconTemperature, IconVideo, IconRefresh } from '@tabler/icons-react';
-import { printersApi, createPrinterWebSocket } from '../api/client';
+import { printersApi } from '../api/client';
 import type { Printer, PrinterStatus } from '@shared/types';
 
 // Temperature history component
@@ -73,11 +73,9 @@ export default function LiveMonitor() {
   const [selectedPrinter, setSelectedPrinter] = useState<number | null>(null);
   const [status, setStatus] = useState<PrinterStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [connecting, setConnecting] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>('webcam');
   const [temperatureHistory, setTemperatureHistory] = useState<Array<{ time: number; extruder: number; bed: number }>>([]);
   const [error, setError] = useState<string | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
   const pollingRef = useRef<number | null>(null);
 
   const loadPrinters = async () => {
@@ -152,53 +150,8 @@ export default function LiveMonitor() {
     };
   }, [selectedPrinter]);
 
-  // WebSocket is optional - we use HTTP polling as primary method
-  useEffect(() => {
-    if (!selectedPrinter) return;
-
-    // Disconnect existing
-    if (wsRef.current && wsRef.current.close) {
-      wsRef.current.close();
-    }
-
-    setConnecting(true);
-
-    // Try WebSocket connection (optional)
-    const ws = createPrinterWebSocket(selectedPrinter);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      setConnecting(false);
-      console.log('WebSocket connected');
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'status_update' && data.data) {
-          setStatus(data.data);
-        }
-      } catch (err) {
-        console.error('WebSocket message error:', err);
-      }
-    };
-
-    ws.onerror = (err) => {
-      console.error('WebSocket error:', err);
-      setConnecting(false);
-    };
-
-    ws.onclose = () => {
-      setConnecting(false);
-      console.log('WebSocket disconnected');
-    };
-
-    return () => {
-      if (ws && ws.close) {
-        ws.close();
-      }
-    };
-  }, [selectedPrinter]);
+  // WebSocket disabled - using HTTP polling only
+  // WebSocket endpoint requires authentication which is not implemented yet
 
   const getStateColor = (state: string) => {
     const colors: Record<string, string> = {
@@ -263,12 +216,6 @@ export default function LiveMonitor() {
                 <strong>Fehler:</strong> {error}
               </Text>
             </Card>
-          )}
-
-          {connecting && (
-            <Center>
-              <Badge color="yellow">Connecting...</Badge>
-            </Center>
           )}
 
           {status ? (
