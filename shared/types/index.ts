@@ -105,6 +105,7 @@ export interface Printer {
   host: string;
   port: number;
   api_key?: string;
+  webcam_url?: string;
   is_active: boolean;
   last_connected?: string;
   created_at: string;
@@ -116,6 +117,7 @@ export interface PrinterCreate {
   host: string;
   port?: number;
   api_key?: string;
+  webcam_url?: string;
 }
 
 // Print Jobs

@@ -12,10 +12,61 @@ import {
   Button,
   Progress,
   Box,
+  Tabs,
 } from '@mantine/core';
-import { IconPlayerPause, IconPlayerPlay, IconX } from '@tabler/icons-react';
+import { IconPlayerPause, IconPlayerPlay, IconX, IconTemperature, IconVideo } from '@tabler/icons-react';
 import { printersApi, createPrinterWebSocket } from '../api/client';
 import type { Printer, PrinterStatus } from '@shared/types';
+
+// Temperature history component
+function TemperatureChart({ temperatures }: { temperatures: Array<{ time: number; extruder: number; bed: number }> }) {
+  if (temperatures.length < 2) return <Text size="sm" c="dimmed">Warte auf Temperaturdaten...</Text>;
+
+  const maxTemp = Math.max(...temperatures.map(t => Math.max(t.extruder, t.bed)), 300);
+  const width = 100;
+  const height = 60;
+
+  const extruderPath = temperatures.map((t, i) =>
+    `${i === 0 ? 'M' : 'L'} ${(i / (temperatures.length - 1)) * width} ${height - (t.extruder / maxTemp) * height}`
+  ).join(' ');
+
+  const bedPath = temperatures.map((t, i) =>
+    `${i === 0 ? 'M' : 'L'} ${(i / (temperatures.length - 1)) * width} ${height - (t.bed / maxTemp) * height}`
+  ).join(' ');
+
+  return (
+    <Box>
+      <svg width="100%" height={height + 20} viewBox={`0 0 ${width} ${height + 20}`} preserveAspectRatio="none">
+        {/* Grid lines */}
+        {[0, 0.25, 0.5, 0.75, 1].map((p, i) => (
+          <line
+            key={i}
+            x1={0}
+            y1={p * height}
+            x2={width}
+            y2={p * height}
+            stroke="#e2e8f0"
+            strokeWidth={0.5}
+          />
+        ))}
+        {/* Bed line */}
+        <path d={bedPath} fill="none" stroke="#f97316" strokeWidth={1.5} />
+        {/* Extruder line */}
+        <path d={extruderPath} fill="none" stroke="#ef4444" strokeWidth={1.5} />
+      </svg>
+      <Group gap="md" mt="xs">
+        <Group gap="xs">
+          <Box w={10} h={10} bg="red" style={{ borderRadius: 2 }} />
+          <Text size="xs">Düse</Text>
+        </Group>
+        <Group gap="xs">
+          <Box w={10} h={10} bg="orange" style={{ borderRadius: 2 }} />
+          <Text size="xs">Bett</Text>
+        </Group>
+      </Group>
+    </Box>
+  );
+}
 
 export default function LiveMonitor() {
   const [printers, setPrinters] = useState<Printer[]>([]);
@@ -23,7 +74,10 @@ export default function LiveMonitor() {
   const [status, setStatus] = useState<PrinterStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
+  const [activeTab, setActiveTab] = useState<string | null>('webcam');
+  const [temperatureHistory, setTemperatureHistory] = useState<Array<{ time: number; extruder: number; bed: number }>>([]);
   const wsRef = useRef<WebSocket | null>(null);
+  const historyRef = useRef<number[]>([]);
 
   const loadPrinters = async () => {
     try {
@@ -67,6 +121,22 @@ export default function LiveMonitor() {
         const data = JSON.parse(event.data);
         if (data.type === 'status_update' && data.data) {
           setStatus(data.data);
+
+          // Add temperature to history
+          if (data.data.temperatures) {
+            const now = Date.now();
+            setTemperatureHistory(prev => {
+              const newHistory = [
+                ...prev,
+                {
+                  time: now,
+                  extruder: data.data.temperatures.extruder?.actual || 0,
+                  bed: data.data.temperatures.heater_bed?.actual || 0,
+                }
+              ].slice(-60); // Keep last 60 readings
+              return newHistory;
+            });
+          }
         }
       } catch (err) {
         console.error('WebSocket message error:', err);
@@ -142,8 +212,50 @@ export default function LiveMonitor() {
           )}
 
           {status ? (
-            <Group align="flex-start" gap="md">
-              <Card padding="md" withBorder style={{ flex: 1 }}>
+            <>
+              {/* Webcam / Temperature Tabs */}
+              <Card padding="md" withBorder>
+                <Tabs value={activeTab} onChange={setActiveTab}>
+                  <Tabs.List>
+                    <Tabs.Tab value="webcam" leftSection={<IconVideo size={16} />}>
+                      Kamera
+                    </Tabs.Tab>
+                    <Tabs.Tab value="temperature" leftSection={<IconTemperature size={16} />}>
+                      Temperatur
+                    </Tabs.Tab>
+                  </Tabs.List>
+
+                  <Tabs.Panel value="webcam" pt="md">
+                    <Box
+                      style={{
+                        width: '100%',
+                        height: 300,
+                        background: '#1a1a1a',
+                        borderRadius: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text c="dimmed">
+                        Webcam-Stream wird hier angezeigt
+                        <br />
+                        <Text size="xs">Konfigurieren Sie die Webcam-URL in den Drucker-Einstellungen</Text>
+                      </Text>
+                    </Box>
+                  </Tabs.Panel>
+
+                  <Tabs.Panel value="temperature" pt="md">
+                    <Card padding="sm" withBorder>
+                      <Text size="sm" fw={500} mb="sm">Temperaturverlauf</Text>
+                      <TemperatureChart temperatures={temperatureHistory} />
+                    </Card>
+                  </Tabs.Panel>
+                </Tabs>
+              </Card>
+
+              <Group align="flex-start" gap="md">
+                <Card padding="md" withBorder style={{ flex: 1 }}>
                 <Stack gap="md">
                   <Group justify="space-between">
                     <div>
@@ -239,6 +351,7 @@ export default function LiveMonitor() {
                 </Stack>
               </Card>
             </Group>
+            </>
           ) : (
             <Center py="xl">
               <Text c="dimmed">Warte auf Druckerdaten...</Text>

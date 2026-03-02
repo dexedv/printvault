@@ -33,6 +33,7 @@ export default function Printers() {
     host: '',
     port: 7125,
     api_key: '',
+    webcam_url: '',
   });
 
   const loadPrinters = async () => {
@@ -221,6 +222,12 @@ export default function Printers() {
             value={formData.api_key}
             onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
             type="password"
+          />
+          <TextInput
+            label="Webcam URL (optional)"
+            placeholder="e.g., http://192.168.1.100/webcam/?action=stream"
+            value={formData.webcam_url}
+            onChange={(e) => setFormData({ ...formData, webcam_url: e.target.value })}
           />
           <Text size="xs" c="dimmed">
             For Klipper printers, enter the Moonraker host IP and port (default 7125).

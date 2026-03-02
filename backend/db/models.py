@@ -101,6 +101,7 @@ class Printer(SQLModel, table=True):
     host: str = Field(max_length=255)
     port: int = Field(default=7125)
     api_key: Optional[str] = Field(default=None, max_length=255)
+    webcam_url: Optional[str] = Field(default=None, max_length=500)  # Webcam stream URL
     is_active: bool = Field(default=True)
     last_connected: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)

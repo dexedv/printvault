@@ -1,5 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlmodel import Session, select
 from datetime import datetime
 import httpx
@@ -12,6 +13,25 @@ from adapters.klipper import KlipperAdapter
 from config import settings
 
 router = APIRouter(prefix="/printers", tags=["printers"])
+
+
+# Pydantic models
+class PrinterCreate(BaseModel):
+    name: str
+    host: str
+    printer_type: str = "klipper"
+    port: int = 7125
+    api_key: Optional[str] = None
+    webcam_url: Optional[str] = None
+
+
+class PrinterUpdate(BaseModel):
+    name: Optional[str] = None
+    host: Optional[str] = None
+    printer_type: Optional[str] = None
+    port: Optional[int] = None
+    api_key: Optional[str] = None
+    webcam_url: Optional[str] = None
 
 
 @router.get("", response_model=List[Printer])
@@ -38,23 +58,20 @@ def get_printer(printer_id: int, db: Session = Depends(get_db)):
 
 @router.post("", response_model=Printer)
 def create_printer(
-    name: str,
-    host: str,
-    printer_type: str = "klipper",
-    port: int = 7125,
-    api_key: Optional[str] = None,
+    printer_data: PrinterCreate,
     db: Session = Depends(get_db)
 ):
     """Add a new printer"""
     # Encrypt API key
-    encrypted_key = encryption.encrypt(api_key) if api_key else None
+    encrypted_key = encryption.encrypt(printer_data.api_key) if printer_data.api_key else None
 
     printer = Printer(
-        name=name,
-        printer_type=printer_type,
-        host=host,
-        port=port,
-        api_key=encrypted_key
+        name=printer_data.name,
+        printer_type=printer_data.printer_type,
+        host=printer_data.host,
+        port=printer_data.port,
+        api_key=encrypted_key,
+        webcam_url=printer_data.webcam_url
     )
     db.add(printer)
     db.commit()
@@ -68,11 +85,7 @@ def create_printer(
 @router.patch("/{printer_id}", response_model=Printer)
 def update_printer(
     printer_id: int,
-    name: Optional[str] = None,
-    host: Optional[str] = None,
-    port: Optional[int] = None,
-    api_key: Optional[str] = None,
-    is_active: Optional[bool] = None,
+    printer_data: PrinterUpdate,
     db: Session = Depends(get_db)
 ):
     """Update a printer"""
@@ -80,16 +93,18 @@ def update_printer(
     if not printer:
         raise HTTPException(status_code=404, detail="Printer not found")
 
-    if name is not None:
-        printer.name = name
-    if host is not None:
-        printer.host = host
-    if port is not None:
-        printer.port = port
-    if api_key is not None and api_key != "***":
-        printer.api_key = encryption.encrypt(api_key)
-    if is_active is not None:
-        printer.is_active = is_active
+    if printer_data.name is not None:
+        printer.name = printer_data.name
+    if printer_data.host is not None:
+        printer.host = printer_data.host
+    if printer_data.port is not None:
+        printer.port = printer_data.port
+    if printer_data.api_key is not None and printer_data.api_key != "***":
+        printer.api_key = encryption.encrypt(printer_data.api_key)
+    if printer_data.webcam_url is not None:
+        printer.webcam_url = printer_data.webcam_url
+    if printer_data.is_active is not None:
+        printer.is_active = printer_data.is_active
 
     db.commit()
     db.refresh(printer)
