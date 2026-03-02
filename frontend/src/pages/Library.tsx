@@ -41,6 +41,7 @@ export default function Library() {
   }, []);
 
   const handleUpload = async () => {
+    // Use Tauri/Electron file dialog if available
     if (window.electronAPI) {
       const result = await window.electronAPI.openFile({
         filters: [
@@ -66,6 +67,30 @@ export default function Library() {
       } finally {
         setUploading(false);
       }
+    } else {
+      // Fallback: Create hidden file input for browser/web mode
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.stl,.3mf,.gcode,.step';
+      input.multiple = true;
+
+      input.onchange = async () => {
+        if (!input.files?.length) return;
+
+        setUploading(true);
+        try {
+          for (const file of input.files) {
+            const uploaded = await filesApi.upload(file);
+            addFile(uploaded);
+          }
+        } catch (err: any) {
+          setError(err.message);
+        } finally {
+          setUploading(false);
+        }
+      };
+
+      input.click();
     }
   };
 
