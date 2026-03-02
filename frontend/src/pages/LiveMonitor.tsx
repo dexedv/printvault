@@ -150,7 +150,7 @@ export default function LiveMonitor() {
     if (!selectedPrinter) return;
 
     // Disconnect existing
-    if (wsRef.current) {
+    if (wsRef.current && wsRef.current.close) {
       wsRef.current.close();
     }
 
@@ -187,7 +187,9 @@ export default function LiveMonitor() {
     };
 
     return () => {
-      ws.close();
+      if (ws && ws.close) {
+        ws.close();
+      }
     };
   }, [selectedPrinter]);
 

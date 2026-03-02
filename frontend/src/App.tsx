@@ -70,7 +70,7 @@ const navLinkStyle = (isActive: boolean): React.CSSProperties => ({
 function App() {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
-  const [appVersion, setAppVersion] = useState('1.0.5');
+  const [appVersion, setAppVersion] = useState('1.0.7');
 
   // Get version from Tauri
   useEffect(() => {

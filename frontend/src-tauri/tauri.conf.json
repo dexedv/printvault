@@ -1,7 +1,7 @@
 {
   "$schema": "../../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "PrintVault",
-  "version": "1.0.5",
+  "version": "1.0.7",
   "identifier": "com.printvault.desktop",
   "build": {
     "frontendDist": "../dist",
@@ -39,7 +39,10 @@
     ],
     "windows": {
       "nsis": {
-        "installMode": "currentUser"
+        "installMode": "currentUser",
+        "installerIcon": "icons/icon.ico",
+        "headerImage": "icons/icon.ico",
+        "sidebarImage": "icons/icon.ico"
       }
     }
   },
