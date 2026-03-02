@@ -197,10 +197,16 @@ async def get_license_status():
     """Gibt den aktuellen Lizenz-Status zurück."""
     license_data = load_license()
 
+    # Wenn keine Lizenz installiert ist, wird Free automatisch verwendet
     if not license_data:
         return LicenseStatusResponse(
             installed=False,
-            valid=False
+            valid=True,
+            tier="free",
+            tier_name="Free",
+            expires="Unbegrenzt",
+            features=TIER_FEATURES["free"],
+            hardware_id=get_hardware_id()
         )
 
     # Lizenz verifizieren
