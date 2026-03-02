@@ -108,7 +108,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [appVersion, setAppVersion] = useState('1.0.8');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(['Dateien', 'Drucken', 'Verwaltung']) // All categories expanded by default
+    new Set() // All categories closed by default
   );
 
   const toggleCategory = (label: string) => {
