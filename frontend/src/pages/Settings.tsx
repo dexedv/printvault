@@ -175,6 +175,7 @@ export default function Settings() {
   const checkForUpdates = async () => {
     setCheckingUpdate(true);
     setUpdateError(null);
+    console.log('Checking for updates, current version:', appVersion);
 
     // Check via GitHub API (works with private repos if user has access)
     try {
@@ -185,9 +186,11 @@ export default function Settings() {
         }
       });
 
+      console.log('GitHub API response:', response.status);
       if (response.ok) {
         const data = await response.json();
         const latestVersion = data.tag_name?.replace('v', '') || data.name;
+        console.log('Latest version from GitHub:', latestVersion);
 
         // Compare versions (simple string comparison)
         if (latestVersion > appVersion) {
@@ -197,24 +200,13 @@ export default function Settings() {
           });
           setCheckingUpdate(false);
           return;
+        } else {
+          setUpdateError('Du hast bereits die neueste Version');
         }
       }
     } catch (e) {
       console.log('GitHub API check failed:', e);
-    }
-
-    // Fallback to Tauri updater (for public repos)
-    try {
-      const { check } = await import('@tauri-apps/plugin-updater');
-      const update = await check();
-      if (update) {
-        setUpdateAvailable({
-          version: update.version,
-          releaseDate: new Date().toISOString()
-        });
-      }
-    } catch (e) {
-      console.log('Tauri updater not available:', e);
+      setUpdateError('Update-Check fehlgeschlagen');
     }
 
     setCheckingUpdate(false);
@@ -383,7 +375,7 @@ export default function Settings() {
                 </Alert>
               )}
 
-              {!updateAvailable && !updateReady && !checkingUpdate && (
+              {!updateAvailable && !updateReady && !checkingUpdate && !updateError && (
                 <Button
                   variant="light"
                   size="sm"
@@ -391,6 +383,21 @@ export default function Settings() {
                 >
                   Nach Updates suchen
                 </Button>
+              )}
+
+              {!updateAvailable && !updateReady && !checkingUpdate && updateError && (
+                <Stack gap="xs">
+                  <Alert icon={<IconCheck size={16} />} color="green">
+                    {updateError}
+                  </Alert>
+                  <Button
+                    variant="light"
+                    size="sm"
+                    onClick={() => { setUpdateError(null); checkForUpdates(); }}
+                  >
+                    Erneut suchen
+                  </Button>
+                </Stack>
               )}
 
               {checkingUpdate && (
