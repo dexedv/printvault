@@ -76,6 +76,7 @@ export default function LiveMonitor() {
   const [connecting, setConnecting] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>('webcam');
   const [temperatureHistory, setTemperatureHistory] = useState<Array<{ time: number; extruder: number; bed: number }>>([]);
+  const [error, setError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const pollingRef = useRef<number | null>(null);
 
@@ -99,6 +100,7 @@ export default function LiveMonitor() {
     try {
       const printerStatus = await printersApi.getStatus(selectedPrinter);
       setStatus(printerStatus);
+      setError(null);
 
       // Add temperature to history
       if (printerStatus.temperatures) {
@@ -115,8 +117,10 @@ export default function LiveMonitor() {
           return newHistory;
         });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch status:', err);
+      setError(err.response?.data?.detail || err.message || 'Verbindung fehlgeschlagen');
+      setStatus(null);
     }
   };
 
@@ -240,6 +244,14 @@ export default function LiveMonitor() {
         </Center>
       ) : (
         <>
+          {error && (
+            <Card padding="sm" withBorder color="red">
+              <Text c="red" size="sm">
+                <strong>Fehler:</strong> {error}
+              </Text>
+            </Card>
+          )}
+
           {connecting && (
             <Center>
               <Badge color="yellow">Connecting...</Badge>
@@ -387,7 +399,7 @@ export default function LiveMonitor() {
               </Card>
             </Group>
             </>
-          ) : (
+          ) : !error && (
             <Center py="xl">
               <Text c="dimmed">Warte auf Druckerdaten...</Text>
             </Center>
