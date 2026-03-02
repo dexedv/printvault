@@ -77,7 +77,7 @@ export default function LiveMonitor() {
   const [activeTab, setActiveTab] = useState<string | null>('webcam');
   const [temperatureHistory, setTemperatureHistory] = useState<Array<{ time: number; extruder: number; bed: number }>>([]);
   const wsRef = useRef<WebSocket | null>(null);
-  const historyRef = useRef<number[]>([]);
+  const pollingRef = useRef<number | null>(null);
 
   const loadPrinters = async () => {
     try {
@@ -93,10 +93,59 @@ export default function LiveMonitor() {
     }
   };
 
+  // Fetch status via HTTP
+  const fetchStatus = async () => {
+    if (!selectedPrinter) return;
+    try {
+      const printerStatus = await printersApi.getStatus(selectedPrinter);
+      setStatus(printerStatus);
+
+      // Add temperature to history
+      if (printerStatus.temperatures) {
+        const now = Date.now();
+        setTemperatureHistory(prev => {
+          const newHistory = [
+            ...prev,
+            {
+              time: now,
+              extruder: printerStatus.temperatures.extruder?.actual || 0,
+              bed: printerStatus.temperatures.heater_bed?.actual || 0,
+            }
+          ].slice(-60);
+          return newHistory;
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch status:', err);
+    }
+  };
+
   useEffect(() => {
     loadPrinters();
   }, []);
 
+  useEffect(() => {
+    if (!selectedPrinter) return;
+
+    // Stop any existing polling
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+    }
+
+    // Fetch initial status
+    fetchStatus();
+
+    // Poll every 2 seconds
+    pollingRef.current = window.setInterval(fetchStatus, 2000);
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
+  }, [selectedPrinter]);
+
+  // WebSocket is optional - we use HTTP polling as primary method
   useEffect(() => {
     if (!selectedPrinter) return;
 
@@ -107,7 +156,7 @@ export default function LiveMonitor() {
 
     setConnecting(true);
 
-    // Create WebSocket connection
+    // Try WebSocket connection (optional)
     const ws = createPrinterWebSocket(selectedPrinter);
     wsRef.current = ws;
 
@@ -121,22 +170,6 @@ export default function LiveMonitor() {
         const data = JSON.parse(event.data);
         if (data.type === 'status_update' && data.data) {
           setStatus(data.data);
-
-          // Add temperature to history
-          if (data.data.temperatures) {
-            const now = Date.now();
-            setTemperatureHistory(prev => {
-              const newHistory = [
-                ...prev,
-                {
-                  time: now,
-                  extruder: data.data.temperatures.extruder?.actual || 0,
-                  bed: data.data.temperatures.heater_bed?.actual || 0,
-                }
-              ].slice(-60); // Keep last 60 readings
-              return newHistory;
-            });
-          }
         }
       } catch (err) {
         console.error('WebSocket message error:', err);

@@ -33,6 +33,18 @@ class MoonrakerClient:
             response.raise_for_status()
             return response.json()
 
+    async def query_objects(self, objects: list[str]) -> Dict[str, Any]:
+        """Query printer objects via Moonraker API"""
+        # Moonraker expects objects as query parameters, not in body
+        query_params = "&".join(objects)
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.get(
+                f"{self.base_url}/printer/objects/query?{query_params}",
+                headers=self.headers
+            )
+            response.raise_for_status()
+            return response.json()
+
     async def post(self, endpoint: str, data: Dict[str, Any] = None) -> Dict[str, Any]:
         """Make POST request to Moonraker"""
         async with httpx.AsyncClient(timeout=30) as client:
@@ -51,9 +63,12 @@ class KlipperAdapter:
     Implements the PrinterAdapter interface for future adapter switching
     """
 
+    # Common ports to try for Moonraker
+    COMMON_PORTS = [7125, 80, 81, 8080]
+
     def __init__(self, host: str, port: int = 7125, api_key: Optional[str] = None):
         self.host = host
-        self.port = port
+        self.port = port  # Initial port to try first
         self.api_key = api_key
         self.client = MoonrakerClient(host, port, api_key)
         self.ws_client: Optional[websockets.WebSocketClientProtocol] = None
@@ -61,13 +76,28 @@ class KlipperAdapter:
         self._status_callbacks: list[Callable[[Dict], None]] = []
 
     async def connect(self) -> bool:
-        """Test connection to printer"""
-        try:
-            await self.client.get("/api/status")
-            return True
-        except Exception as e:
-            print(f"Connection failed: {e}")
-            return False
+        """Test connection to printer - tries multiple ports automatically"""
+        # First try the configured port
+        ports_to_try = [self.port] + [p for p in self.COMMON_PORTS if p != self.port]
+
+        for try_port in ports_to_try:
+            print(f"KlipperAdapter: Trying {self.host}:{try_port}...")
+            test_client = MoonrakerClient(self.host, try_port, self.api_key)
+
+            try:
+                # Try the new Moonraker API endpoint
+                await test_client.query_objects(["print_stats"])
+                # Success! Update the port
+                self.port = try_port
+                self.client = test_client
+                print(f"KlipperAdapter: Connected successfully on port {try_port}!")
+                return True
+            except Exception as e:
+                print(f"KlipperAdapter: Port {try_port} failed: {type(e).__name__}")
+                continue
+
+        print(f"KlipperAdapter: All ports failed")
+        return False
 
     async def disconnect(self):
         """Disconnect from printer"""
@@ -82,11 +112,38 @@ class KlipperAdapter:
 
     async def get_status(self) -> Dict[str, Any]:
         """Get printer status from Moonraker"""
-        result = await self.client.get("/api/status")
+        try:
+            # Try new Moonraker API endpoint first
+            result = await self.client.query_objects([
+                "print_stats",
+                "extruder",
+                "heater_bed",
+                "toolhead",
+                "bed_mesh"
+            ])
+            # Convert to legacy format for backward compatibility
+            legacy_format = {"result": {"status": result.get("result", {})}}
+            normalized = self._normalize_status(legacy_format)
+            return normalized
+        except Exception as e:
+            # Try other common ports as fallback
+            for try_port in self.COMMON_PORTS:
+                if try_port == self.port:
+                    continue
+                print(f"KlipperAdapter: get_status trying port {try_port}...")
+                try:
+                    test_client = MoonrakerClient(self.host, try_port, self.api_key)
+                    result = await test_client.query_objects(["print_stats"])
+                    # Success! Update the client
+                    self.port = try_port
+                    self.client = test_client
+                    legacy_format = {"result": {"status": result.get("result", {})}}
+                    return self._normalize_status(legacy_format)
+                except:
+                    continue
 
-        # Normalize status
-        normalized = self._normalize_status(result)
-        return normalized
+            print(f"Failed to get status: {e}")
+            raise Exception(f"Failed to connect to printer on any port")
 
     def _normalize_status(self, status: Dict[str, Any]) -> Dict[str, Any]:
         """Normalize Moonraker status to PrintVault format"""

@@ -13,6 +13,7 @@
     "build:electron": "cd frontend && npm run electron:build"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.10.0",
     "concurrently": "^8.2.2"
   }
 }

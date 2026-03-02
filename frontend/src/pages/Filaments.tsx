@@ -18,6 +18,8 @@ import {
   Group,
   ColorSwatch,
   Progress,
+  Popover,
+  UnstyledButton,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
@@ -26,12 +28,36 @@ import {
   IconTrash,
   IconEdit,
   IconAlertTriangle,
+  IconPalette,
 } from '@tabler/icons-react';
 import { useFilamentsStore } from '../store';
 import { filamentsApi } from '../api/client';
 import type { Filament } from '@shared/types';
 
 const MATERIALS = ['PLA', 'PETG', 'ABS', 'TPU', 'ASA', 'PC', 'PA', 'PVB', 'PP', 'PEI'];
+
+const COLOR_PALETTE = [
+  // Basic colors
+  '#ffffff', '#000000', '#f3f4f6', '#d1d5db', '#9ca3af', '#6b7280', '#4b5563', '#374151',
+  // Red
+  '#ef4444', '#fca5a5', '#f87171', '#dc2626', '#b91c1c', '#991b1b',
+  // Orange
+  '#f97316', '#fdba74', '#fb923c', '#ea580c', '#c2410c',
+  // Yellow
+  '#eab308', '#fde047', '#facc15', '#ca8a04', '#a16207',
+  // Green
+  '#22c55e', '#86efac', '#4ade80', '#16a34a', '#15803d', '#166534',
+  // Blue
+  '#3b82f6', '#93c5fd', '#60a5fa', '#2563eb', '#1d4ed8', '#1e40af',
+  // Purple
+  '#a855f7', '#d8b4fe', '#c084fc', '#9333ea', '#7e22ce', '#6b21a8',
+  // Pink
+  '#ec4899', '#f9a8d4', '#f472b6', '#db2777', '#be185d',
+  // Brown
+  '#a16207', '#d97706', '#92400e', '#78350f', '#451a03',
+  // Special
+  '#c0c0c0', '#808080', '#00ff00', '#00ffff', '#ff00ff',
+];
 
 export default function Filaments() {
   const { filaments, loading, setFilaments, setLoading, addFilament, updateFilament, removeFilament } = useFilamentsStore();
@@ -240,15 +266,47 @@ export default function Filaments() {
             onChange={(e) => setFormData({ ...formData, color_name: e.target.value })}
             required
           />
-          <Group>
+          <Group align="flex-end">
             <TextInput
-              label="Color Hex"
+              label="Farbe"
               placeholder="#3b82f6"
               value={formData.color_hex}
               onChange={(e) => setFormData({ ...formData, color_hex: e.target.value })}
               style={{ flex: 1 }}
             />
-            <ColorSwatch color={formData.color_hex} mt={24} />
+            <Popover width={340} position="bottom" withArrow shadow="md">
+              <Popover.Target>
+                <ActionIcon size="lg" variant="default" mt={24}>
+                  <ColorSwatch color={formData.color_hex} size={18} />
+                </ActionIcon>
+              </Popover.Target>
+              <Popover.Dropdown>
+                <Text size="sm" fw={500} mb="xs">Farbpalette</Text>
+                <Group gap={6}>
+                  {COLOR_PALETTE.map((color) => (
+                    <UnstyledButton
+                      key={color}
+                      onClick={() => setFormData({ ...formData, color_hex: color })}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 4,
+                        backgroundColor: color,
+                        border: formData.color_hex === color ? '2px solid #228be6' : '1px solid #dee2e6',
+                        cursor: 'pointer',
+                      }}
+                    />
+                  ))}
+                </Group>
+                <TextInput
+                  placeholder="Eigene Farbe"
+                  value={formData.color_hex}
+                  onChange={(e) => setFormData({ ...formData, color_hex: e.target.value })}
+                  mt="sm"
+                  size="xs"
+                />
+              </Popover.Dropdown>
+            </Popover>
           </Group>
           <NumberInput
             label="Total Weight (kg)"

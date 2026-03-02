@@ -13,12 +13,25 @@ import {
   Badge,
   Progress,
   Alert,
+  SimpleGrid,
+  Loader,
+  Center,
+  Box,
 } from '@mantine/core';
-import { IconRefresh, IconDownload, IconCheck, IconAlertCircle } from '@tabler/icons-react';
+import { IconRefresh, IconDownload, IconCheck, IconAlertCircle, IconPlug, IconSettings, IconCopy, IconTrash } from '@tabler/icons-react';
+import { extensionsApi, slicingApi, systemApi } from '../api/client';
 
 interface UpdateInfo {
   version: string;
   releaseDate: string;
+}
+
+interface Extension {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  enabled: boolean;
 }
 
 export default function Settings() {
@@ -34,6 +47,19 @@ export default function Settings() {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [updateReady, setUpdateReady] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
+
+  // Extensions state
+  const [extensions, setExtensions] = useState<Extension[]>([]);
+  const [extensionsLoading, setExtensionsLoading] = useState(true);
+
+  // Slicers state
+  const [availableSlicers, setAvailableSlicers] = useState<Record<string, string>>({});
+  const [slicersLoading, setSlicersLoading] = useState(true);
+
+  // Logs state
+  const [logs, setLogs] = useState('');
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
     if (window.electronAPI) {
@@ -65,35 +91,162 @@ export default function Settings() {
         setDownloading(false);
       });
     }
+
+    // Load extensions
+    loadExtensions();
+
+    // Load slicers
+    loadSlicers();
+
+    // Load logs
+    loadLogs();
   }, []);
 
+  const loadExtensions = async () => {
+    setExtensionsLoading(true);
+    try {
+      const data = await extensionsApi.list();
+      setExtensions(data);
+    } catch (err) {
+      console.error('Failed to load extensions:', err);
+    } finally {
+      setExtensionsLoading(false);
+    }
+  };
+
+  const loadSlicers = async () => {
+    setSlicersLoading(true);
+    try {
+      const data = await slicingApi.getSlicers();
+      setAvailableSlicers(data);
+    } catch (err) {
+      console.error('Failed to load slicers:', err);
+    } finally {
+      setSlicersLoading(false);
+    }
+  };
+
+  const loadLogs = async () => {
+    setLogsLoading(true);
+    try {
+      const data = await systemApi.getLogs();
+      setLogs(data.logs);
+    } catch (err) {
+      console.error('Failed to load logs:', err);
+      setLogs('Fehler beim Laden der Logs: ' + String(err));
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  const clearLogs = async () => {
+    try {
+      await systemApi.clearLogs();
+      setLogs('=== Logs wurden gelöscht ===\n');
+    } catch (err) {
+      console.error('Failed to clear logs:', err);
+    }
+  };
+
+  const copyLogs = async () => {
+    try {
+      await navigator.clipboard.writeText(logs);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy logs:', err);
+    }
+  };
+
+  const toggleExtension = async (id: string, enabled: boolean) => {
+    try {
+      if (enabled) {
+        await extensionsApi.enable(id);
+      } else {
+        await extensionsApi.disable(id);
+      }
+      // Reload extensions
+      loadExtensions();
+    } catch (err) {
+      console.error('Failed to toggle extension:', err);
+    }
+  };
+
   const checkForUpdates = async () => {
-    if (!window.electronAPI) return;
     setCheckingUpdate(true);
     setUpdateError(null);
-    const result = await window.electronAPI.checkForUpdates();
-    if (!result) {
+
+    // Try Tauri updater first
+    try {
+      const { check } = await import('@tauri-apps/plugin-updater');
+      const update = await check();
+      if (update) {
+        setUpdateAvailable({
+          version: update.version,
+          releaseDate: new Date().toISOString()
+        });
+      }
+      setCheckingUpdate(false);
+      return;
+    } catch (e) {
+      // Not in Tauri or updater not available
+      console.log('Tauri updater not available:', e);
+    }
+
+    // Fallback to Electron API
+    if (window.electronAPI) {
+      const result = await window.electronAPI.checkForUpdates();
+      if (!result) {
+        setCheckingUpdate(false);
+      }
+    } else {
       setCheckingUpdate(false);
     }
   };
 
   const downloadUpdate = async () => {
-    if (!window.electronAPI) return;
-    setDownloading(true);
-    setDownloadProgress(0);
-    const success = await window.electronAPI.downloadUpdate();
-    if (!success) {
-      setDownloading(false);
+    // Try Tauri updater first
+    try {
+      const { check } = await import('@tauri-apps/plugin-updater');
+      const update = await check();
+      if (update) {
+        setDownloading(true);
+        setDownloadProgress(0);
+        await update.downloadAndInstall((event: any) => {
+          if (event.event === 'Progress') {
+            const total = event.data.contentLength || 1;
+            const downloaded = event.data.chunkLength || 0;
+            setDownloadProgress(Math.round((downloaded / total) * 100));
+          }
+        });
+        setDownloading(false);
+        return;
+      }
+    } catch (e) {
+      console.log('Tauri updater error:', e);
+    }
+
+    // Fallback to Electron API
+    if (window.electronAPI) {
+      setDownloading(true);
+      setDownloadProgress(0);
+      const success = await window.electronAPI.downloadUpdate();
+      if (!success) {
+        setDownloading(false);
+      }
     }
   };
 
   const installUpdate = () => {
+    // Tauri handles this automatically after download
     if (window.electronAPI) {
       window.electronAPI.installUpdate();
     }
   };
 
   const isElectron = typeof window !== 'undefined' && window.electronAPI !== undefined;
+  const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI__;
+  const showUpdateSection = isElectron || isTauri;
 
   return (
     <Stack gap="md">
@@ -189,7 +342,7 @@ export default function Settings() {
             Erstellt mit Electron, React, FastAPI und SQLite.
           </Text>
 
-          {isElectron && (
+          {showUpdateSection && (
             <>
               <Divider my="sm" />
 
@@ -258,6 +411,99 @@ export default function Settings() {
         </Stack>
       </Card>
 
+      {/* Extensions Section */}
+      <Card padding="md" withBorder>
+        <Group gap="xs" mb="md">
+          <IconPlug size={20} />
+          <Title order={4}>Erweiterungen</Title>
+        </Group>
+        <Text size="sm" c="dimmed" mb="md">
+          Erweiterungen fügen neue Funktionen zur Anwendung hinzu.
+        </Text>
+
+        {extensionsLoading ? (
+          <Center py="md">
+            <Loader size="sm" />
+          </Center>
+        ) : extensions.length === 0 ? (
+          <Text c="dimmed" ta="center" py="md">
+            Keine Erweiterungen verfügbar
+          </Text>
+        ) : (
+          <Stack gap="sm">
+            {extensions.map((ext) => (
+              <Card key={ext.id} padding="sm" withBorder>
+                <Group justify="space-between">
+                  <div>
+                    <Group gap="xs">
+                      <Text fw={500}>{ext.name}</Text>
+                      <Badge size="xs" variant="light">v{ext.version}</Badge>
+                    </Group>
+                    <Text size="xs" c="dimmed">{ext.description}</Text>
+                  </div>
+                  <Switch
+                    checked={ext.enabled}
+                    onChange={(e) => toggleExtension(ext.id, e.currentTarget.checked)}
+                  />
+                </Group>
+              </Card>
+            ))}
+          </Stack>
+        )}
+      </Card>
+
+      {/* Slicing Section */}
+      <Card padding="md" withBorder>
+        <Group gap="xs" mb="md">
+          <IconSettings size={20} />
+          <Title order={4}>Slicer-Einstellungen</Title>
+        </Group>
+        <Text size="sm" c="dimmed" mb="md">
+          Konfigurieren Sie die Slicer-Integration für STL-Dateien.
+        </Text>
+
+        {slicersLoading ? (
+          <Center py="md">
+            <Loader size="sm" />
+          </Center>
+        ) : (
+          <Stack gap="md">
+            <div>
+              <Text fw={500} mb="xs">Verfügbare Slicer</Text>
+              {Object.keys(availableSlicers).length === 0 ? (
+                <Alert color="yellow" icon={<IconAlertCircle size={16} />}>
+                  Keine Slicer gefunden. Installieren Sie PrusaSlicer oder Cura, um STL-Dateien direkt in der App zu slicen.
+                </Alert>
+              ) : (
+                <SimpleGrid cols={3}>
+                  {Object.entries(availableSlicers).map(([name, path]) => (
+                    <Card key={name} padding="xs" withBorder>
+                      <Text fw={500} tt="capitalize">{name}</Text>
+                      <Text size="xs" c="dimmed" lineClamp={1}>{path}</Text>
+                    </Card>
+                  ))}
+                </SimpleGrid>
+              )}
+            </div>
+
+            <Divider />
+
+            <Group justify="space-between">
+              <div>
+                <Text fw={500}>Standard-Slicer</Text>
+                <Text size="sm" c="dimmed">Slicer für neue Druckaufträge</Text>
+              </div>
+              <Select
+                placeholder="Slicer auswählen"
+                data={Object.keys(availableSlicers).map(s => ({ value: s, label: s }))}
+                defaultValue="prusaslicer"
+                style={{ width: 180 }}
+              />
+            </Group>
+          </Stack>
+        )}
+      </Card>
+
       <Card padding="md" withBorder>
         <Title order={4} mb="md">Entwickler</Title>
         <Stack gap="sm">
@@ -274,6 +520,63 @@ export default function Settings() {
             Der Backend läuft als separater Prozess. Stellen Sie sicher, dass er läuft, damit die App funktioniert.
           </Text>
         </Stack>
+      </Card>
+
+      {/* Logs Section */}
+      <Card padding="md" withBorder>
+        <Group justify="space-between" mb="md">
+          <Title order={4}>Fehlerprotokoll</Title>
+          <Group gap="xs">
+            <Button
+              variant="light"
+              size="xs"
+              leftSection={<IconCopy size={14} />}
+              onClick={copyLogs}
+              color={copySuccess ? 'green' : 'blue'}
+            >
+              {copySuccess ? 'Kopiert!' : 'Kopieren'}
+            </Button>
+            <Button
+              variant="light"
+              size="xs"
+              leftSection={<IconTrash size={14} />}
+              onClick={clearLogs}
+              color="red"
+            >
+              Löschen
+            </Button>
+            <Button
+              variant="light"
+              size="xs"
+              leftSection={<IconRefresh size={14} />}
+              onClick={loadLogs}
+              loading={logsLoading}
+            >
+              Aktualisieren
+            </Button>
+          </Group>
+        </Group>
+        <Text size="xs" c="dimmed" mb="sm">
+          Vollständiges Anwendungsprotokoll für Fehlerbehebung und Support.
+        </Text>
+        <Box
+          style={{
+            background: '#1e1e1e',
+            borderRadius: 8,
+            padding: 12,
+            maxHeight: 400,
+            overflow: 'auto',
+            fontFamily: 'monospace',
+            fontSize: 11,
+            lineHeight: 1.5,
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all',
+          }}
+        >
+          <Text c="gray.5" style={{ fontFamily: 'monospace' }}>
+            {logsLoading ? 'Lade Logs...' : logs || 'Keine Logs verfügbar'}
+          </Text>
+        </Box>
       </Card>
     </Stack>
   );

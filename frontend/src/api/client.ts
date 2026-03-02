@@ -10,7 +10,29 @@ import type {
   PrinterStatus,
 } from '@shared/types';
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+// Get API URL - try Tauri first, otherwise use default
+const getApiBaseUrl = async () => {
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    const backendUrl = await invoke<string>('get_backend_url');
+    return `${backendUrl}/api/v1`;
+  } catch {
+    // Not in Tauri, use default
+    return 'http://localhost:8000/api/v1';
+  }
+};
+
+// Dynamic API URL
+let API_BASE_URL = 'http://localhost:8000/api/v1';
+
+// Initialize API URL
+getApiBaseUrl().then(url => {
+  API_BASE_URL = url;
+  console.log('[API] Using base URL:', API_BASE_URL);
+});
+
+// Export function to get current API URL
+export const getApiUrl = () => API_BASE_URL;
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -181,9 +203,80 @@ export const jobsApi = {
     apiClient.delete(`/jobs/${id}`).then((r) => r.data),
 };
 
+// Slicing API
+export const slicingApi = {
+  getSlicers: () =>
+    apiClient.get<Record<string, string>>('/slicing/slicers').then((r) => r.data),
+
+  slice: (data: { file_path: string; profile_id: number; slicer: string }) =>
+    apiClient.post<{ success: boolean; gcode_path?: string; estimated_time?: number; error?: string }>(
+      '/slicing/slice',
+      data
+    ).then((r) => r.data),
+
+  getProfiles: () =>
+    apiClient.get('/slicing/profiles').then((r) => r.data),
+};
+
+// Extensions API
+export const extensionsApi = {
+  list: () =>
+    apiClient.get<Array<{ id: string; name: string; description: string; version: string; enabled: boolean }>>(
+      '/extensions'
+    ).then((r) => r.data),
+
+  enable: (id: string) =>
+    apiClient.post(`/extensions/${id}/enable`).then((r) => r.data),
+
+  disable: (id: string) =>
+    apiClient.post(`/extensions/${id}/disable`).then((r) => r.data),
+
+  // OctoPrint
+  getOctoPrintServers: () =>
+    apiClient.get<Array<{ name: string; host: string; port: number }>>('/extensions/octoprint/servers').then((r) => r.data),
+
+  addOctoPrintServer: (data: { name: string; host: string; port: number; api_key: string }) =>
+    apiClient.post('/extensions/octoprint/servers', data).then((r) => r.data),
+
+  removeOctoPrintServer: (name: string) =>
+    apiClient.delete(`/extensions/octoprint/servers/${name}`).then((r) => r.data),
+
+  // Bambu Lab
+  getBambuPrinters: () =>
+    apiClient.get<Array<{ name: string; host: string; serial: string; region: string }>>('/extensions/bambulab/printers').then((r) => r.data),
+
+  addBambuPrinter: (data: { name: string; host: string; serial: string; access_code: string; region: string }) =>
+    apiClient.post('/extensions/bambulab/printers', data).then((r) => r.data),
+
+  removeBambuPrinter: (name: string) =>
+    apiClient.delete(`/extensions/bambulab/printers/${name}`).then((r) => r.data),
+
+  // Timelapse
+  getTimelapseSessions: () =>
+    apiClient.get('/extensions/timelapse/sessions').then((r) => r.data),
+
+  createTimelapseSession: (data: { name: string; frame_interval: number; fps: number }) =>
+    apiClient.post('/extensions/timelapse/sessions', data).then((r) => r.data),
+
+  // Cloud Print
+  getCloudProviders: () =>
+    apiClient.get('/extensions/cloudprint/providers').then((r) => r.data),
+};
+
+// System API
+export const systemApi = {
+  getLogs: () =>
+    apiClient.get<{ logs: string }>('/system/logs').then((r) => r.data),
+
+  clearLogs: () =>
+    apiClient.post('/system/logs/clear').then((r) => r.data),
+};
+
 // WebSocket
-export function createPrinterWebSocket(printerId: number): WebSocket {
-  return new WebSocket(`ws://localhost:8000/ws/printer/${printerId}`);
+export async function createPrinterWebSocket(printerId: number): Promise<WebSocket> {
+  const baseUrl = await getApiBaseUrl();
+  const wsUrl = baseUrl.replace('http://', 'ws://').replace('https://', 'wss://');
+  return new WebSocket(`${wsUrl}/ws/printer/${printerId}`);
 }
 
 export default apiClient;

@@ -141,6 +141,16 @@ async def connect_printer(printer_id: int, db: Session = Depends(get_db)):
 
     try:
         adapter = KlipperAdapter(printer.host, printer.port, api_key)
+
+        # First test basic connection
+        is_connected = await adapter.connect()
+        if not is_connected:
+            return {
+                "connected": False,
+                "error": f"Verbindung zu Moonraker unter {printer.host}:{printer.port} fehlgeschlagen.\n\nMögliche Ursachen:\n• Moonraker läuft nicht auf dem Drucker\n• Falsche IP-Adresse oder Port\n• Firewall blockiert die Verbindung\n• Drucker ist nicht im Netzwerk erreichbar"
+            }
+
+        # Try to get full status
         status = await adapter.get_status()
 
         printer.last_connected = datetime.utcnow()
@@ -150,10 +160,20 @@ async def connect_printer(printer_id: int, db: Session = Depends(get_db)):
             "connected": True,
             "status": status
         }
+    except httpx.ConnectError as e:
+        return {
+            "connected": False,
+            "error": f"Verbindung abgelehnt von {printer.host}:{printer.port}.\n\nMoonraker ist wahrscheinlich nicht gestartet.\nIP und Port prüfen."
+        }
+    except httpx.TimeoutException:
+        return {
+            "connected": False,
+            "error": f"Zeitüberschreitung bei Verbindung zu {printer.host}:{printer.port}.\n\nDrucker ist nicht erreichbar."
+        }
     except Exception as e:
         return {
             "connected": False,
-            "error": str(e)
+            "error": f"Fehler: {str(e)}"
         }
 
 

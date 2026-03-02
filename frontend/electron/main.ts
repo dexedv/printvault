@@ -1,9 +1,5 @@
 import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
-import { autoUpdater } from 'electron-updater';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Set up environment variables
 process.env.VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
@@ -18,7 +14,7 @@ function createWindow() {
     minHeight: 700,
     title: 'PrintVault',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(app.getAppPath(), 'dist-electron', 'preload.cjs'),
       nodeIntegration: false,
       contextIsolation: true,
     },
@@ -36,7 +32,7 @@ function createWindow() {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    mainWindow.loadFile(path.join(app.getAppPath(), 'dist', 'index.html'));
   }
 
   // Handle external links
@@ -79,79 +75,9 @@ ipcMain.handle('app:getVersion', () => {
   return app.getVersion();
 });
 
-// Auto-Updater Setup
-function setupAutoUpdater() {
-  // Configure auto-updater
-  autoUpdater.autoDownload = false;
-  autoUpdater.autoInstallOnAppQuit = true;
-
-  // Log update events
-  autoUpdater.on('checking-for-update', () => {
-    console.log('Checking for updates...');
-  });
-
-  autoUpdater.on('update-available', (info) => {
-    console.log('Update available:', info.version);
-    mainWindow?.webContents.send('update:available', info);
-  });
-
-  autoUpdater.on('update-not-available', () => {
-    console.log('No updates available');
-    mainWindow?.webContents.send('update:not-available');
-  });
-
-  autoUpdater.on('download-progress', (progress) => {
-    console.log(`Download progress: ${progress.percent.toFixed(1)}%`);
-    mainWindow?.webContents.send('update:progress', progress);
-  });
-
-  autoUpdater.on('update-downloaded', (info) => {
-    console.log('Update downloaded:', info.version);
-    mainWindow?.webContents.send('update:downloaded', info);
-  });
-
-  autoUpdater.on('error', (error) => {
-    console.error('Auto-updater error:', error);
-    mainWindow?.webContents.send('update:error', error.message);
-  });
-}
-
-// IPC handlers for auto-updater
-ipcMain.handle('update:check', async () => {
-  try {
-    const result = await autoUpdater.checkForUpdates();
-    return result?.updateInfo || null;
-  } catch (error: any) {
-    console.error('Update check failed:', error);
-    return null;
-  }
-});
-
-ipcMain.handle('update:download', async () => {
-  try {
-    await autoUpdater.downloadUpdate();
-    return true;
-  } catch (error: any) {
-    console.error('Update download failed:', error);
-    return false;
-  }
-});
-
-ipcMain.handle('update:install', () => {
-  autoUpdater.quitAndInstall();
-});
-
 // App lifecycle
 app.whenReady().then(() => {
   createWindow();
-  setupAutoUpdater();
-
-  // Check for updates after window is ready (only in production)
-  if (!process.env.VITE_DEV_SERVER_URL) {
-    setTimeout(() => {
-      autoUpdater.checkForUpdates().catch(console.error);
-    }, 3000);
-  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

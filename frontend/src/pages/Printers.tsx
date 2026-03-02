@@ -27,6 +27,8 @@ export default function Printers() {
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [editingPrinter, setEditingPrinter] = useState<Printer | null>(null);
   const [testingId, setTestingId] = useState<number | null>(null);
+  // Connection status for each printer: true = connected, false = disconnected, null = unknown
+  const [connectionStatus, setConnectionStatus] = useState<Record<number, boolean | null>>({});
   const [formData, setFormData] = useState({
     name: '',
     printer_type: 'klipper',
@@ -81,13 +83,13 @@ export default function Printers() {
     setTestingId(id);
     try {
       const result = await printersApi.connect(id);
+      setConnectionStatus(prev => ({ ...prev, [id]: result.connected }));
       if (result.connected) {
-        alert('Connected successfully!');
-      } else {
-        alert(`Connection failed: ${result.error}`);
+        // Refresh printer data
+        loadPrinters();
       }
     } catch (err) {
-      alert('Connection failed');
+      setConnectionStatus(prev => ({ ...prev, [id]: false }));
     } finally {
       setTestingId(null);
     }
@@ -149,6 +151,17 @@ export default function Printers() {
               <Group justify="space-between" mb="sm">
                 <div>
                   <Group gap="xs">
+                    {/* Connection Status Indicator */}
+                    <div
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: '50%',
+                        backgroundColor: connectionStatus[printer.id] === true ? '#10b981' : connectionStatus[printer.id] === false ? '#ef4444' : '#94a3b8',
+                        boxShadow: connectionStatus[printer.id] === true ? '0 0 6px #10b981' : 'none',
+                      }}
+                      title={connectionStatus[printer.id] === true ? 'Verbunden' : connectionStatus[printer.id] === false ? 'Nicht verbunden' : 'Unbekannt'}
+                    />
                     <Text fw={500}>{printer.name}</Text>
                     <Badge size="sm" variant="light">{printer.printer_type}</Badge>
                   </Group>
@@ -212,9 +225,12 @@ export default function Printers() {
             required
           />
           <NumberInput
-            label="Port"
-            value={formData.port}
-            onChange={(v) => setFormData({ ...formData, port: Number(v) })}
+            label="Port (optional, default: 7125)"
+            placeholder="7125"
+            value={formData.port || ''}
+            onChange={(v) => setFormData({ ...formData, port: Number(v) || 7125 })}
+            min={1}
+            max={65535}
           />
           <TextInput
             label="API Key (optional)"
@@ -230,8 +246,8 @@ export default function Printers() {
             onChange={(e) => setFormData({ ...formData, webcam_url: e.target.value })}
           />
           <Text size="xs" c="dimmed">
-            For Klipper printers, enter the Moonraker host IP and port (default 7125).
-            API key is optional but recommended for secure connections.
+            Für Klipper-Drucker: Moonraker IP und Port (Standard: 7125).
+            API-Schlüssel optional aber empfohlen.
           </Text>
           <Group justify="flex-end" mt="md">
             <Button variant="light" onClick={closeModal}>Cancel</Button>

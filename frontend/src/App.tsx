@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { Badge, Group, Text } from '@mantine/core';
 import {
@@ -9,6 +10,7 @@ import {
   IconGauge,
   IconHistory,
   IconSettings,
+  IconPlug,
 } from '@tabler/icons-react';
 
 import Library from './pages/Library';
@@ -20,6 +22,9 @@ import Printers from './pages/Printers';
 import LiveMonitor from './pages/LiveMonitor';
 import Jobs from './pages/Jobs';
 import Settings from './pages/Settings';
+import Extensions from './pages/Extensions';
+import LoadingScreen from './components/LoadingScreen';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const navItems = [
   { to: '/library', label: 'Bibliothek', icon: IconFiles },
@@ -29,6 +34,7 @@ const navItems = [
   { to: '/printers', label: 'Drucker', icon: IconPrinter },
   { to: '/monitor', label: 'Live-Überwachung', icon: IconGauge },
   { to: '/jobs', label: 'Aufträge', icon: IconHistory },
+  { to: '/extensions', label: 'Erweiterungen', icon: IconPlug },
   { to: '/settings', label: 'Einstellungen', icon: IconSettings },
 ];
 
@@ -64,6 +70,26 @@ const navLinkStyle = (isActive: boolean): React.CSSProperties => ({
 
 function App() {
   const location = useLocation();
+  const [loading, setLoading] = useState(true);
+
+  // Check if we're in Tauri environment
+  useEffect(() => {
+    // Check for Tauri - either via window.__TAURI__ or via file protocol
+    const isTauri = !!(window as any).__TAURI__ || window.location.protocol === 'file:';
+    // In dev mode without Tauri, skip loading screen
+    if (import.meta.env.DEV && !isTauri) {
+      setLoading(false);
+    }
+    // In production (including Tauri builds), always show loading screen
+  }, []);
+
+  const handleLoadingComplete = () => {
+    setLoading(false);
+  };
+
+  if (loading) {
+    return <LoadingScreen onComplete={handleLoadingComplete} />;
+  }
 
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
@@ -112,6 +138,7 @@ function App() {
 
       {/* Main Content */}
       <main style={mainStyle}>
+        <ErrorBoundary>
         {/* Header */}
         <header style={{
           height: '64px',
@@ -138,9 +165,11 @@ function App() {
             <Route path="/printers" element={<Printers />} />
             <Route path="/monitor" element={<LiveMonitor />} />
             <Route path="/jobs" element={<Jobs />} />
+            <Route path="/extensions" element={<Extensions />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </div>
+        </ErrorBoundary>
       </main>
     </div>
   );

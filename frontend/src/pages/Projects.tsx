@@ -96,21 +96,22 @@ export default function Projects() {
 
   return (
     <Stack gap="md">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Projekte</h1>
-        <button onClick={openCreateModal} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-          <IconPlus className="w-4 h-4" />
+      <Group justify="space-between">
+        <Title order={2}>Projekte</Title>
+        <Button
+          leftSection={<IconPlus size={18} />}
+          onClick={openCreateModal}
+        >
           Neues Projekt
-        </button>
-      </div>
+        </Button>
+      </Group>
 
       <TextInput
         placeholder="Projekte suchen..."
-        leftSection={<IconSearch className="w-4 h-4 text-slate-400" />}
+        leftSection={<IconSearch size={18} />}
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        className="max-w-md"
-        styles={{ input: { backgroundColor: 'white', borderColor: '#e2e8f0' } }}
+        style={{ maxWidth: 400 }}
       />
 
       {error && (
@@ -134,7 +135,9 @@ export default function Projects() {
           {filteredProjekte.map((project) => (
             <Card
               key={project.id}
-              className="card card-hover cursor-pointer"
+              padding="md"
+              withBorder
+              style={{ cursor: 'pointer' }}
               onClick={() => navigate(`/projects/${project.id}`)}
             >
               <Group justify="space-between" mb="xs">
@@ -206,18 +209,18 @@ export default function Projects() {
         </SimpleGrid>
       )}
 
-      <Modal opened={createModalOpened} onClose={closeCreateModal} title="Create Project" centered>
+      <Modal opened={createModalOpened} onClose={closeCreateModal} title="Neues Projekt" centered>
         <Stack>
           <TextInput
             label="Name"
-            placeholder="Project name"
+            placeholder="Projektname"
             required
             value={newProject.name}
             onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
           />
           <Textarea
             label="Beschreibung"
-            placeholder="Project description (optional)"
+            placeholder="Projektbeschreibung (optional)"
             value={newProject.description}
             onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
           />
@@ -229,10 +232,10 @@ export default function Projects() {
           />
           <Group justify="flex-end" mt="md">
             <Button variant="light" onClick={closeCreateModal}>
-              Cancel
+              Abbrechen
             </Button>
             <Button onClick={handleCreate} disabled={!newProject.name}>
-              Create
+              Erstellen
             </Button>
           </Group>
         </Stack>
