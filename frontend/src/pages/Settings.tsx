@@ -36,7 +36,7 @@ interface Extension {
 }
 
 export default function Settings() {
-  const [appVersion, setAppVersion] = useState<string>('1.0.7');
+  const [appVersion, setAppVersion] = useState<string>('1.1.0');
   const [darkMode, setDarkMode] = useState(false);
   const [autoConnect, setAutoConnect] = useState(true);
   const [defaultPrinter, setDefaultPrinter] = useState<string | null>(null);

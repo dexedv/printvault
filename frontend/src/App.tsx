@@ -113,7 +113,7 @@ const navLinkStyle = (isActive: boolean): React.CSSProperties => ({
 function App() {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
-  const [appVersion, setAppVersion] = useState('1.0.8');
+  const [appVersion, setAppVersion] = useState('1.1.0');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set()
   );
