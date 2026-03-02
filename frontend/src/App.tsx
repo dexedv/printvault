@@ -130,8 +130,8 @@ function App() {
 
         {/* Version */}
         <div style={{ padding: '16px', borderTop: '1px solid #f1f5f9' }}>
-          <Badge variant="light" color="blue" style={{ width: '100%', justifyContent: 'center' }}>
-            v1.0.0
+          <Badge variant="light" color="green" style={{ width: '100%', justifyContent: 'center' }}>
+            v1.0.1
           </Badge>
         </div>
       </aside>
