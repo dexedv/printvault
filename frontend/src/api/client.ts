@@ -28,7 +28,6 @@ let API_BASE_URL = 'http://localhost:8000/api/v1';
 // Initialize API URL
 getApiBaseUrl().then(url => {
   API_BASE_URL = url;
-  console.log('[API] Using base URL:', API_BASE_URL);
 });
 
 // Export function to get current API URL
@@ -45,7 +44,6 @@ const apiClient = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
-    console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`);
     return config;
   },
   (error) => {
