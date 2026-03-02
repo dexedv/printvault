@@ -35,7 +35,6 @@ const navItems = [
   { to: '/monitor', label: 'Live-Überwachung', icon: IconGauge },
   { to: '/jobs', label: 'Aufträge', icon: IconHistory },
   { to: '/extensions', label: 'Erweiterungen', icon: IconPlug },
-  { to: '/settings', label: 'Einstellungen', icon: IconSettings },
 ];
 
 const sidebarStyle: React.CSSProperties = {
@@ -128,9 +127,16 @@ function App() {
           })}
         </nav>
 
-        {/* Version */}
-        <div style={{ padding: '16px', borderTop: '1px solid #f1f5f9' }}>
-          <Badge variant="light" color="green" style={{ width: '100%', justifyContent: 'center' }}>
+        {/* Settings & Version */}
+        <div style={{ padding: '12px', borderTop: '1px solid #f1f5f9' }}>
+          <Link
+            to="/settings"
+            style={navLinkStyle(location.pathname === '/settings')}
+          >
+            <IconSettings size={20} />
+            <span>Einstellungen</span>
+          </Link>
+          <Badge variant="light" color="green" style={{ width: '100%', justifyContent: 'center', marginTop: '12px' }}>
             v1.0.1
           </Badge>
         </div>
