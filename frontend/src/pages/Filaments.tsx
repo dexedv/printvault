@@ -266,7 +266,7 @@ export default function Filaments() {
           </Stack>
         </Center>
       ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing="lg">
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4, xl: 5 }} spacing="md">
           {filteredFilaments.map((filament) => {
             const percent = getRemainingPercent(filament);
             const lowStock = isLowStock(filament);
