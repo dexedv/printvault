@@ -183,7 +183,7 @@ export default function Library() {
           </Stack>
         </Center>
       ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing="lg">
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4, xl: 5 }} spacing="md">
           {filteredFiles.map((file) => {
             const typeColor = getFileTypeColor(file.file_type);
             return (

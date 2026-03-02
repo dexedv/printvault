@@ -157,7 +157,7 @@ export default function Jobs() {
   return (
     <Stack gap="md">
       {/* Statistics Cards */}
-      <SimpleGrid cols={{ base: 2, md: 4 }}>
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4, xl: 5 }}>
         <Card padding="md" withBorder className={classes.statCard}>
           <Box style={{
             width: 40,

@@ -134,7 +134,7 @@ export default function Projects() {
           </Stack>
         </Center>
       ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4, xl: 5 }} spacing="md">
           {filteredProjekte.map((project) => (
             <Card
               key={project.id}

@@ -190,7 +190,7 @@ export default function Extensions() {
       </Group>
 
       {/* Extension Cards */}
-      <SimpleGrid cols={{ base: 1, md: 2 }}>
+      <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }}>
         {extensions.map((ext) => (
           <Card key={ext.id} padding="md" withBorder>
             <Group justify="space-between" mb="xs">
@@ -357,7 +357,7 @@ export default function Extensions() {
               <Divider />
 
               <Text fw={500} size="sm">Einstellungen</Text>
-              <SimpleGrid cols={3}>
+              <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
                 <NumberInput
                   label="Bildintervall (Sekunden)"
                   defaultValue={5}
@@ -404,7 +404,7 @@ export default function Extensions() {
               <Divider />
 
               <Text fw={500} size="sm">Verfügbare Anbieter</Text>
-              <SimpleGrid cols={2}>
+              <SimpleGrid cols={{ base: 1, sm: 2 }}>
                 <Card padding="sm" withBorder>
                   <Group justify="space-between">
                     <div>

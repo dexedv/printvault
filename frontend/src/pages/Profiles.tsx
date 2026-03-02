@@ -159,7 +159,7 @@ export default function Profiles() {
           </Stack>
         </Center>
       ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4, xl: 5 }} spacing="md">
           {profiles.map((profile) => {
             const materialColor = MATERIAL_COLORS[profile.material] || '#6b7280';
             return (

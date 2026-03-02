@@ -150,7 +150,7 @@ export default function Printers() {
           </Stack>
         </Center>
       ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4, xl: 5 }} spacing="md">
           {printers.map((printer) => {
             const isConnected = connectionStatus[printer.id] === true;
             const isDisconnected = connectionStatus[printer.id] === false;
