@@ -35,8 +35,12 @@ PUBLIC_KEY = "PV-PUB-2024-KEY-VERIFY-01"
 TIER_FEATURES = {
     "free": {
         "name": "Free",
+        "max_files": 10,
+        "max_projects": 2,
         "max_printers": 1,
         "max_filaments": 10,
+        "max_customers": 5,
+        "max_orders": 3,
         "cloud_sync": False,
         "api_access": False,
         "support": False,
@@ -44,20 +48,18 @@ TIER_FEATURES = {
     },
     "pro": {
         "name": "Pro",
-        "max_printers": 10,
-        "max_filaments": 100,
-        "cloud_sync": True,
-        "api_access": True,
-        "support": False,
-        "price": 19.99
-    },
-    "enterprise": {
-        "name": "Enterprise",
+        "max_files": -1,  # unlimited
+        "max_projects": -1,  # unlimited
         "max_printers": -1,  # unlimited
         "max_filaments": -1,  # unlimited
+        "max_customers": -1,  # unlimited
+        "max_orders": -1,  # unlimited
         "cloud_sync": True,
         "api_access": True,
         "support": True,
+        "price": 29.99
+    },
+}
         "price": 49.99
     }
 }

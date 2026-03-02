@@ -732,15 +732,17 @@ export default function Settings() {
                         Gültig bis: <Text span fw={500}>{licenseStatus?.expires}</Text>
                       </Text>
                       {licenseStatus?.features && (
-                        <Group gap="xs" mt="xs">
-                          {licenseStatus.features.max_printers > 0 && (
-                            <Badge size="sm" variant="light">Drucker: {licenseStatus.features.max_printers === -1 ? '∞' : licenseStatus.features.max_printers}</Badge>
-                          )}
+                        <Group gap="xs" mt="xs" wrap="wrap">
+                          <Badge size="sm" variant="light">Dateien: {licenseStatus.features.max_files === -1 ? '∞' : licenseStatus.features.max_files}</Badge>
+                          <Badge size="sm" variant="light">Projekte: {licenseStatus.features.max_projects === -1 ? '∞' : licenseStatus.features.max_projects}</Badge>
+                          <Badge size="sm" variant="light">Drucker: {licenseStatus.features.max_printers === -1 ? '∞' : licenseStatus.features.max_printers}</Badge>
+                          <Badge size="sm" variant="light">Kunden: {licenseStatus.features.max_customers === -1 ? '∞' : licenseStatus.features.max_customers}</Badge>
+                          <Badge size="sm" variant="light">Aufträge: {licenseStatus.features.max_orders === -1 ? '∞' : licenseStatus.features.max_orders}</Badge>
                           {licenseStatus.features.cloud_sync && (
                             <Badge size="sm" variant="light" color="cyan">Cloud Sync</Badge>
                           )}
-                          {licenseStatus.features.api_access && (
-                            <Badge size="sm" variant="light" color="grape">API</Badge>
+                          {licenseStatus.features.support && (
+                            <Badge size="sm" variant="light" color="grape">Support</Badge>
                           )}
                         </Group>
                       )}
@@ -819,7 +821,7 @@ export default function Settings() {
             <Card padding="md" withBorder>
               <Title order={4} mb="md">Lizenz-Varianten</Title>
 
-              <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
                 {/* Free */}
                 <Box
                   p="md"
@@ -835,10 +837,14 @@ export default function Settings() {
                   </Group>
                   <Text size="xs" c="dimmed" mb="sm">Für Einsteiger</Text>
                   <Stack gap={4}>
+                    <Text size="xs">✓ 10 STL Dateien</Text>
+                    <Text size="xs">✓ 2 Projekte</Text>
                     <Text size="xs">✓ 1 Drucker</Text>
+                    <Text size="xs">✓ 5 Kunden</Text>
+                    <Text size="xs">✓ 3 aktive Aufträge</Text>
                     <Text size="xs">✓ 10 Filamente</Text>
                     <Text size="xs" c="dimmed">✗ Cloud Sync</Text>
-                    <Text size="xs" c="dimmed">✗ API Zugang</Text>
+                    <Text size="xs" c="dimmed">✗ Support</Text>
                   </Stack>
                 </Box>
 
@@ -861,53 +867,22 @@ export default function Settings() {
                       right: 8,
                     }}
                   >
-                    Beliebt
+                    Unbegrenzt
                   </Badge>
                   <Group gap="xs" mb="sm">
                     <Text fw={700}>Pro</Text>
-                    <Badge color="blue" variant="filled">19,99€/Jahr</Badge>
+                    <Badge color="blue" variant="filled">29,99€/Jahr</Badge>
                   </Group>
-                  <Text size="xs" c="dimmed" mb="sm">Für Hobby-Drucker</Text>
+                  <Text size="xs" c="dimmed" mb="sm">Für professionelle Nutzer</Text>
                   <Stack gap={4}>
-                    <Text size="xs">✓ 10 Drucker</Text>
-                    <Text size="xs">✓ 100 Filamente</Text>
-                    <Text size="xs">✓ Cloud Sync</Text>
-                    <Text size="xs">✓ API Zugang</Text>
-                  </Stack>
-                </Box>
-
-                {/* Enterprise */}
-                <Box
-                  p="md"
-                  style={{
-                    border: '2px solid #8b5cf6',
-                    borderRadius: 12,
-                    background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
-                    position: 'relative',
-                  }}
-                >
-                  <Badge
-                    size="xs"
-                    color="violet"
-                    style={{
-                      position: 'absolute',
-                      top: -10,
-                      right: 8,
-                    }}
-                  >
-                    Professionell
-                  </Badge>
-                  <Group gap="xs" mb="sm">
-                    <Text fw={700}>Enterprise</Text>
-                    <Badge color="violet" variant="filled">49,99€/Jahr</Badge>
-                  </Group>
-                  <Text size="xs" c="dimmed" mb="sm">Für Unternehmen</Text>
-                  <Stack gap={4}>
+                    <Text size="xs">✓ Unbegrenzt Dateien</Text>
+                    <Text size="xs">✓ Unbegrenzt Projekte</Text>
                     <Text size="xs">✓ Unbegrenzt Drucker</Text>
+                    <Text size="xs">✓ Unbegrenzt Kunden</Text>
+                    <Text size="xs">✓ Unbegrenzt Aufträge</Text>
                     <Text size="xs">✓ Unbegrenzt Filamente</Text>
                     <Text size="xs">✓ Cloud Sync</Text>
-                    <Text size="xs">✓ API Zugang</Text>
-                    <Text size="xs">✓ Support</Text>
+                    <Text size="xs">✓ Premium Support</Text>
                   </Stack>
                 </Box>
               </SimpleGrid>

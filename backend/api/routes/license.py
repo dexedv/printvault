@@ -30,8 +30,12 @@ LICENSE_FILE = Path(__file__).parent.parent / "data" / "license.json"
 TIER_FEATURES = {
     "free": {
         "name": "Free",
+        "max_files": 10,
+        "max_projects": 2,
         "max_printers": 1,
         "max_filaments": 10,
+        "max_customers": 5,
+        "max_orders": 3,
         "cloud_sync": False,
         "api_access": False,
         "support": False,
@@ -39,22 +43,17 @@ TIER_FEATURES = {
     },
     "pro": {
         "name": "Pro",
-        "max_printers": 10,
-        "max_filaments": 100,
-        "cloud_sync": True,
-        "api_access": True,
-        "support": False,
-        "price": 19.99
-    },
-    "enterprise": {
-        "name": "Enterprise",
+        "max_files": -1,
+        "max_projects": -1,
         "max_printers": -1,
         "max_filaments": -1,
+        "max_customers": -1,
+        "max_orders": -1,
         "cloud_sync": True,
         "api_access": True,
         "support": True,
-        "price": 49.99
-    }
+        "price": 29.99
+    },
 }
 
 # Geheimer Key für Signatur (MUSS geheim bleiben!)
