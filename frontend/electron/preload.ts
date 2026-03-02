@@ -13,6 +13,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPath: (name: string) => ipcRenderer.invoke('app:getPath', name),
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
 
+  // Auto-updater
+  checkForUpdates: () => ipcRenderer.invoke('update:check'),
+  downloadUpdate: () => ipcRenderer.invoke('update:download'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
+
   // Platform info
   platform: process.platform,
 
@@ -33,6 +38,9 @@ declare global {
       openPath: (path: string) => Promise<string>;
       getPath: (name: string) => Promise<string>;
       getVersion: () => Promise<string>;
+      checkForUpdates: () => Promise<any>;
+      downloadUpdate: () => Promise<boolean>;
+      installUpdate: () => void;
       platform: string;
       on: (channel: string, callback: (...args: any[]) => void) => () => void;
     };

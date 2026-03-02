@@ -11,8 +11,15 @@ import {
   TextInput,
   Select,
   Badge,
+  Progress,
+  Alert,
 } from '@mantine/core';
-import { IconRefresh } from '@tabler/icons-react';
+import { IconRefresh, IconDownload, IconCheck, IconAlertCircle } from '@tabler/icons-react';
+
+interface UpdateInfo {
+  version: string;
+  releaseDate: string;
+}
 
 export default function Settings() {
   const [appVersion, setAppVersion] = useState('1.0.0');
@@ -20,11 +27,73 @@ export default function Settings() {
   const [autoConnect, setAutoConnect] = useState(true);
   const [defaultPrinter, setDefaultPrinter] = useState<string | null>(null);
 
+  // Update states
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState<UpdateInfo | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [updateReady, setUpdateReady] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+
   useEffect(() => {
     if (window.electronAPI) {
       window.electronAPI.getVersion().then(setAppVersion);
+
+      // Listen for update events
+      window.electronAPI.on('update:available', (info: UpdateInfo) => {
+        setUpdateAvailable(info);
+        setCheckingUpdate(false);
+      });
+
+      window.electronAPI.on('update:not-available', () => {
+        setUpdateAvailable(null);
+        setCheckingUpdate(false);
+      });
+
+      window.electronAPI.on('update:progress', (progress: { percent: number }) => {
+        setDownloadProgress(progress.percent);
+      });
+
+      window.electronAPI.on('update:downloaded', () => {
+        setDownloading(false);
+        setUpdateReady(true);
+      });
+
+      window.electronAPI.on('update:error', (error: string) => {
+        setUpdateError(error);
+        setCheckingUpdate(false);
+        setDownloading(false);
+      });
     }
   }, []);
+
+  const checkForUpdates = async () => {
+    if (!window.electronAPI) return;
+    setCheckingUpdate(true);
+    setUpdateError(null);
+    const result = await window.electronAPI.checkForUpdates();
+    if (!result) {
+      setCheckingUpdate(false);
+    }
+  };
+
+  const downloadUpdate = async () => {
+    if (!window.electronAPI) return;
+    setDownloading(true);
+    setDownloadProgress(0);
+    const success = await window.electronAPI.downloadUpdate();
+    if (!success) {
+      setDownloading(false);
+    }
+  };
+
+  const installUpdate = () => {
+    if (window.electronAPI) {
+      window.electronAPI.installUpdate();
+    }
+  };
+
+  const isElectron = typeof window !== 'undefined' && window.electronAPI !== undefined;
 
   return (
     <Stack gap="md">
@@ -119,6 +188,73 @@ export default function Settings() {
           <Text size="xs" c="dimmed">
             Erstellt mit Electron, React, FastAPI und SQLite.
           </Text>
+
+          {isElectron && (
+            <>
+              <Divider my="sm" />
+
+              <Title order={5} mb="xs">Updates</Title>
+
+              {updateError && (
+                <Alert icon={<IconAlertCircle size={16} />} color="red" mb="sm">
+                  {updateError}
+                </Alert>
+              )}
+
+              {!updateAvailable && !updateReady && !checkingUpdate && (
+                <Button
+                  variant="light"
+                  size="sm"
+                  onClick={checkForUpdates}
+                >
+                  Nach Updates suchen
+                </Button>
+              )}
+
+              {checkingUpdate && (
+                <Text size="sm" c="dimmed">
+                  Suche nach Updates...
+                </Text>
+              )}
+
+              {updateAvailable && !downloading && !updateReady && (
+                <Stack gap="xs">
+                  <Text size="sm">
+                    Neue Version verfügbar: <Text fw={500}>{updateAvailable.version}</Text>
+                  </Text>
+                  <Button
+                    leftSection={<IconDownload size={16} />}
+                    onClick={downloadUpdate}
+                    size="sm"
+                  >
+                    Update herunterladen
+                  </Button>
+                </Stack>
+              )}
+
+              {downloading && (
+                <Stack gap="xs">
+                  <Text size="sm">Update wird heruntergeladen...</Text>
+                  <Progress value={downloadProgress} size="sm" animated />
+                  <Text size="xs" c="dimmed">{downloadProgress.toFixed(1)}%</Text>
+                </Stack>
+              )}
+
+              {updateReady && (
+                <Stack gap="xs">
+                  <Alert icon={<IconCheck size={16} />} color="green">
+                    Update bereit zur Installation
+                  </Alert>
+                  <Button
+                    onClick={installUpdate}
+                    size="sm"
+                  >
+                    Jetzt neu starten und installieren
+                  </Button>
+                </Stack>
+              )}
+            </>
+          )}
         </Stack>
       </Card>
 
