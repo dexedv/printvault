@@ -17,6 +17,7 @@ import {
   Center,
   Box,
   Tabs,
+  TextInput,
 } from '@mantine/core';
 import { IconRefresh, IconDownload, IconCheck, IconAlertCircle, IconPlug, IconSettings, IconCopy, IconTrash, IconUser, IconCloud, IconInfoCircle, IconCode, IconList, IconKey, IconShieldCheck, IconShieldX, IconDiamond } from '@tabler/icons-react';
 import { extensionsApi, slicingApi, systemApi, licenseApi } from '../api/client';
@@ -842,7 +843,7 @@ export default function Settings() {
                     <Text size="xs">✓ 1 Drucker</Text>
                     <Text size="xs">✓ 5 Kunden</Text>
                     <Text size="xs">✓ 3 aktive Aufträge</Text>
-                    <Text size="xs">✓ 10 Filamente</Text>
+                    <Text size="xs">✓ 5 Filamente</Text>
                     <Text size="xs" c="dimmed">✗ Cloud Sync</Text>
                     <Text size="xs" c="dimmed">✗ Support</Text>
                   </Stack>

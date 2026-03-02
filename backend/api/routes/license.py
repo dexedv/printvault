@@ -33,7 +33,7 @@ TIER_FEATURES = {
         "max_files": 10,
         "max_projects": 2,
         "max_printers": 1,
-        "max_filaments": 10,
+        "max_filaments": 5,
         "max_customers": 5,
         "max_orders": 3,
         "cloud_sync": False,
