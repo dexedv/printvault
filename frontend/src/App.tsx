@@ -28,6 +28,7 @@ import Library from './pages/Library';
 import Projects from './pages/Projects';
 import ProjectDetail from './pages/ProjectDetail';
 import Filaments from './pages/Filaments';
+import { licenseApi } from './api/client';
 import Profiles from './pages/Profiles';
 import Printers from './pages/Printers';
 import LiveMonitor from './pages/LiveMonitor';
@@ -117,6 +118,16 @@ function App() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set()
   );
+  const [licenseStatus, setLicenseStatus] = useState<any>(null);
+
+  const loadLicenseStatus = async () => {
+    try {
+      const status = await licenseApi.getStatus();
+      setLicenseStatus(status);
+    } catch (err) {
+      console.error('Failed to load license status:', err);
+    }
+  };
 
   const toggleCategory = (label: string) => {
     setExpandedCategories(prev => {
@@ -141,6 +152,7 @@ function App() {
       }
     };
     getVersion();
+    loadLicenseStatus();
   }, []);
 
   useEffect(() => {
@@ -197,6 +209,22 @@ function App() {
           >
             PrintVault
           </Text>
+          {licenseStatus && (
+            <Badge
+              size="xs"
+              variant="filled"
+              color={licenseStatus.tier === 'pro' ? 'blue' : licenseStatus.tier === 'free' ? 'gray' : 'red'}
+              ml="xs"
+              style={{ textTransform: 'none' }}
+            >
+              {licenseStatus.tier_name}
+            </Badge>
+          )}
+          {licenseStatus && licenseStatus.expires !== 'Unbegrenzt' && (
+            <Text size="xs" c="dimmed" ml="xs">
+              bis {licenseStatus.expires}
+            </Text>
+          )}
         </Box>
 
         {/* Navigation */}
