@@ -173,6 +173,9 @@ export default function Settings() {
   };
 
   const checkForUpdates = async () => {
+    // Debug: Show alert first
+    alert('Check for updates clicked! Version: ' + appVersion);
+
     setCheckingUpdate(true);
     setUpdateError(null);
     console.log('Checking for updates, current version:', appVersion);
