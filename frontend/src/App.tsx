@@ -70,6 +70,21 @@ const navLinkStyle = (isActive: boolean): React.CSSProperties => ({
 function App() {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
+  const [appVersion, setAppVersion] = useState('1.0.5');
+
+  // Get version from Tauri
+  useEffect(() => {
+    const getVersion = async () => {
+      try {
+        const { getVersion } = await import('@tauri-apps/api/app');
+        const version = await getVersion();
+        setAppVersion(version);
+      } catch {
+        // Fallback - keep default
+      }
+    };
+    getVersion();
+  }, []);
 
   // Check if we're in Tauri environment
   useEffect(() => {
@@ -137,7 +152,7 @@ function App() {
             <span>Einstellungen</span>
           </Link>
           <Badge variant="light" color="green" style={{ width: '100%', justifyContent: 'center', marginTop: '12px' }}>
-            v1.0.1
+            v{appVersion}
           </Badge>
         </div>
       </aside>
