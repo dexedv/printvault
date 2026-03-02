@@ -13,10 +13,12 @@ import {
   Progress,
   RingProgress,
   Paper,
+  Box,
 } from '@mantine/core';
-import { IconPrinter, IconClock, IconCheck, IconX, IconAlertTriangle } from '@tabler/icons-react';
+import { IconPrinter, IconClock, IconCheck, IconX, IconAlertTriangle, IconHistory } from '@tabler/icons-react';
 import { jobsApi, printersApi } from '../api/client';
 import type { PrintJob, Printer } from '@shared/types';
+import classes from './Jobs.module.css';
 
 export default function Jobs() {
   const [jobs, setJobs] = useState<PrintJob[]>([]);
@@ -156,39 +158,75 @@ export default function Jobs() {
     <Stack gap="md">
       {/* Statistics Cards */}
       <SimpleGrid cols={{ base: 2, md: 4 }}>
-        <Card padding="sm" withBorder>
-          <Group gap="xs" mb="xs">
-            <IconPrinter size={18} color="#2563eb" />
-            <Text size="xs" c="dimmed">Gesamt</Text>
-          </Group>
-          <Text size="xl" fw={700}>{stats.totalJobs}</Text>
+        <Card padding="md" withBorder className={classes.statCard}>
+          <Box style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            background: '#eff6ff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 12,
+          }}>
+            <IconPrinter size={20} color="#3b82f6" />
+          </Box>
+          <Text size="xs" c="dimmed" tt="uppercase" fw={500}>Gesamt</Text>
+          <Text size="xl" fw={700} c="dark">{stats.totalJobs}</Text>
           <Text size="xs" c="dimmed">Druckaufträge</Text>
         </Card>
 
-        <Card padding="sm" withBorder>
-          <Group gap="xs" mb="xs">
-            <IconClock size={18} color="#2563eb" />
-            <Text size="xs" c="dimmed">Druckzeit</Text>
-          </Group>
-          <Text size="xl" fw={700}>{formatHours(stats.totalPrintHours)}</Text>
+        <Card padding="md" withBorder className={classes.statCard}>
+          <Box style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            background: '#fef3c7',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 12,
+          }}>
+            <IconClock size={20} color="#f59e0b" />
+          </Box>
+          <Text size="xs" c="dimmed" tt="uppercase" fw={500}>Druckzeit</Text>
+          <Text size="xl" fw={700} c="dark">{formatHours(stats.totalPrintHours)}</Text>
           <Text size="xs" c="dimmed">Gesamte Druckzeit</Text>
         </Card>
 
-        <Card padding="sm" withBorder>
-          <Group gap="xs" mb="xs">
-            <IconCheck size={18} color="#10b981" />
-            <Text size="xs" c="dimmed">Erfolg</Text>
-          </Group>
-          <Text size="xl" fw={700}>{stats.successRate.toFixed(1)}%</Text>
+        <Card padding="md" withBorder className={classes.statCard}>
+          <Box style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            background: '#dcfce7',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 12,
+          }}>
+            <IconCheck size={20} color="#22c55e" />
+          </Box>
+          <Text size="xs" c="dimmed" tt="uppercase" fw={500}>Erfolg</Text>
+          <Text size="xl" fw={700} c="green">{stats.successRate.toFixed(1)}%</Text>
           <Text size="xs" c="dimmed">{stats.successCount} erfolgreich</Text>
         </Card>
 
-        <Card padding="sm" withBorder>
-          <Group gap="xs" mb="xs">
-            <IconX size={18} color="#ef4444" />
-            <Text size="xs" c="dimmed">Fehler</Text>
-          </Group>
-          <Text size="xl" fw={700}>{stats.failureRate.toFixed(1)}%</Text>
+        <Card padding="md" withBorder className={classes.statCard}>
+          <Box style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            background: '#fee2e2',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 12,
+          }}>
+            <IconX size={20} color="#ef4444" />
+          </Box>
+          <Text size="xs" c="dimmed" tt="uppercase" fw={500}>Fehler</Text>
+          <Text size="xl" fw={700} c="red">{stats.failureRate.toFixed(1)}%</Text>
           <Text size="xs" c="dimmed">{stats.failedCount} fehlgeschlagen</Text>
         </Card>
       </SimpleGrid>
@@ -285,36 +323,70 @@ export default function Jobs() {
 
       {filteredJobs.length === 0 ? (
         <Center py="xl">
-          <Text c="dimmed">Keine Druckaufträge gefunden</Text>
+          <Stack align="center" gap="md" p="xl">
+            <Box className={classes.emptyIcon} style={{ width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <IconHistory size={36} color="#94a3b8" />
+            </Box>
+            <Text c="dimmed" size="lg">Keine Druckaufträge gefunden</Text>
+          </Stack>
         </Center>
       ) : (
         <Stack gap="sm">
           {filteredJobs.map((job) => (
-            <Card key={job.id} padding="sm" withBorder>
+            <Card key={job.id} padding="md" withBorder className={classes.jobCard}>
               <Group justify="space-between">
-                <div>
-                  <Group gap="xs" mb={4}>
-                    <Text fw={500}>{job.filename}</Text>
-                    <Badge size="sm" color={getStatusColor(job.status)}>
-                      {job.status}
-                    </Badge>
-                  </Group>
-                  <Text size="xs" c="dimmed">
-                    {getPrinterName(job.printer_id)} • Started: {job.started_at ? new Date(job.started_at).toLocaleString() : '-'}
-                  </Text>
-                </div>
+                <Group gap="md">
+                  <Box
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 10,
+                      background: job.status === 'completed' ? '#dcfce7'
+                        : job.status === 'failed' ? '#fee2e2'
+                        : job.status === 'printing' ? '#dbeafe'
+                        : '#f1f5f9',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {job.status === 'completed' ? (
+                      <IconCheck size={20} color="#22c55e" />
+                    ) : job.status === 'failed' ? (
+                      <IconX size={20} color="#ef4444" />
+                    ) : job.status === 'printing' ? (
+                      <IconPrinter size={20} color="#3b82f6" />
+                    ) : (
+                      <IconClock size={20} color="#94a3b8" />
+                    )}
+                  </Box>
+                  <div>
+                    <Group gap="xs" mb={4}>
+                      <Text fw={600} size="sm">{job.filename}</Text>
+                      <Badge size="sm" color={getStatusColor(job.status)} variant="filled">
+                        {job.status}
+                      </Badge>
+                    </Group>
+                    <Text size="xs" c="dimmed">
+                      {getPrinterName(job.printer_id)} • {job.started_at ? new Date(job.started_at).toLocaleString('de-DE') : '-'}
+                    </Text>
+                  </div>
+                </Group>
                 <Group gap="xl">
                   <div style={{ textAlign: 'right' }}>
-                    <Text size="xs" c="dimmed">Progress</Text>
-                    <Text fw={500}>{job.progress_percent.toFixed(1)}%</Text>
+                    <Text size="xs" c="dimmed">Fortschritt</Text>
+                    <Group gap="xs">
+                      <Text fw={600}>{job.progress_percent.toFixed(1)}%</Text>
+                      <Progress value={job.progress_percent} size="xs" w={60} radius="xl" />
+                    </Group>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <Text size="xs" c="dimmed">Duration</Text>
+                    <Text size="xs" c="dimmed">Dauer</Text>
                     <Text fw={500}>{formatDuration(job.duration_seconds)}</Text>
                   </div>
                   {(job.temperature_nozzle || job.temperature_bed) && (
                     <div style={{ textAlign: 'right' }}>
-                      <Text size="xs" c="dimmed">Temps</Text>
+                      <Text size="xs" c="dimmed">Temperatur</Text>
                       <Text size="sm" fw={500}>
                         {job.temperature_nozzle ? `${job.temperature_nozzle.toFixed(0)}°` : '-'} / {job.temperature_bed ? `${job.temperature_bed.toFixed(0)}°` : '-'}
                       </Text>

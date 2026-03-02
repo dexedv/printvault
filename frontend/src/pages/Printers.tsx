@@ -15,11 +15,13 @@ import {
   TextInput,
   NumberInput,
   Group,
+  Box,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconPlus, IconDotsVertical, IconTrash, IconEdit, IconRefresh } from '@tabler/icons-react';
+import { IconPlus, IconDotsVertical, IconTrash, IconEdit, IconRefresh, IconPrinter, IconCloud, IconCloudOff } from '@tabler/icons-react';
 import { printersApi } from '../api/client';
 import type { Printer } from '@shared/types';
+import classes from './Printers.module.css';
 
 export default function Printers() {
   const [printers, setPrinters] = useState<Printer[]>([]);
@@ -137,74 +139,129 @@ export default function Printers() {
 
       {printers.length === 0 ? (
         <Center py="xl">
-          <Stack align="center" gap="sm">
-            <Text c="dimmed">Keine Drucker konfiguriert</Text>
+          <Stack align="center" gap="md" p="xl">
+            <Box className={classes.emptyIcon} style={{ width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <IconPrinter size={36} color="#94a3b8" />
+            </Box>
+            <Text c="dimmed" size="lg">Keine Drucker konfiguriert</Text>
             <Button variant="light" onClick={() => { resetForm(); openModal(); }}>
               Ersten Drucker hinzufügen
             </Button>
           </Stack>
         </Center>
       ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-          {printers.map((printer) => (
-            <Card key={printer.id} padding="md" withBorder>
-              <Group justify="space-between" mb="sm">
-                <div>
-                  <Group gap="xs">
-                    {/* Connection Status Indicator */}
-                    <div
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: '50%',
-                        backgroundColor: connectionStatus[printer.id] === true ? '#10b981' : connectionStatus[printer.id] === false ? '#ef4444' : '#94a3b8',
-                        boxShadow: connectionStatus[printer.id] === true ? '0 0 6px #10b981' : 'none',
-                      }}
-                      title={connectionStatus[printer.id] === true ? 'Verbunden' : connectionStatus[printer.id] === false ? 'Nicht verbunden' : 'Unbekannt'}
-                    />
-                    <Text fw={500}>{printer.name}</Text>
-                    <Badge size="sm" variant="light">{printer.printer_type}</Badge>
-                  </Group>
-                  <Text size="xs" c="dimmed">
-                    {printer.host}:{printer.port}
-                  </Text>
-                </div>
-                <Menu shadow="md" width={150} position="bottom-end">
-                  <Menu.Target>
-                    <ActionIcon variant="subtle" color="gray">
-                      <IconDotsVertical size={16} />
-                    </ActionIcon>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    <Menu.Item
-                      leftSection={<IconRefresh size={16} />}
-                      onClick={() => handleTest(printer.id)}
-                      loading={testingId === printer.id}
-                    >
-                      Test Connection
-                    </Menu.Item>
-                    <Menu.Item leftSection={<IconEdit size={16} />} onClick={() => openEdit(printer)}>
-                      Edit
-                    </Menu.Item>
-                    <Menu.Divider />
-                    <Menu.Item
-                      color="red"
-                      leftSection={<IconTrash size={16} />}
-                      onClick={() => handleDelete(printer.id)}
-                    >
-                      Delete
-                    </Menu.Item>
-                  </Menu.Dropdown>
-                </Menu>
-              </Group>
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+          {printers.map((printer) => {
+            const isConnected = connectionStatus[printer.id] === true;
+            const isDisconnected = connectionStatus[printer.id] === false;
+            const statusColor = isConnected ? '#10b981' : isDisconnected ? '#ef4444' : '#94a3b8';
 
-              {printer.last_connected && (
-                <Text size="xs" c="dimmed">
-                  Last connected: {new Date(printer.last_connected).toLocaleString()}
-                </Text>
-              )}
-            </Card>
-          ))}
+            return (
+              <Card key={printer.id} padding={0} withBorder className={classes.card}>
+                {/* Colored top bar */}
+                <Box style={{
+                  height: '6px',
+                  background: isConnected ? 'linear-gradient(90deg, #10b981 0%, #34d399 100%)'
+                    : isDisconnected ? 'linear-gradient(90deg, #ef4444 0%, #f87171 100%)'
+                    : 'linear-gradient(90deg, #94a3b8 0%, #cbd5e1 100%)',
+                }} />
+
+                <Box p="md">
+                  <Group justify="space-between" mb="md">
+                    <Group gap="sm">
+                      <Box
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: 12,
+                          background: isConnected ? '#ecfdf5' : isDisconnected ? '#fef2f2' : '#f8fafc',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {isConnected ? (
+                          <IconCloud size={24} color="#10b981" />
+                        ) : isDisconnected ? (
+                          <IconCloudOff size={24} color="#ef4444" />
+                        ) : (
+                          <IconPrinter size={24} color="#94a3b8" />
+                        )}
+                      </Box>
+                      <div>
+                        <Text fw={600} size="md">{printer.name}</Text>
+                        <Badge size="sm" variant="light" color="blue">{printer.printer_type}</Badge>
+                      </div>
+                    </Group>
+                    <Menu shadow="md" width={150} position="bottom-end">
+                      <Menu.Target>
+                        <ActionIcon variant="subtle" color="gray" size="lg">
+                          <IconDotsVertical size={18} />
+                        </ActionIcon>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        <Menu.Item
+                          leftSection={<IconRefresh size={16} />}
+                          onClick={() => handleTest(printer.id)}
+                          loading={testingId === printer.id}
+                        >
+                          Verbindung testen
+                        </Menu.Item>
+                        <Menu.Item leftSection={<IconEdit size={16} />} onClick={() => openEdit(printer)}>
+                          Bearbeiten
+                        </Menu.Item>
+                        <Menu.Divider />
+                        <Menu.Item
+                          color="red"
+                          leftSection={<IconTrash size={16} />}
+                          onClick={() => handleDelete(printer.id)}
+                        >
+                          Löschen
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
+                  </Group>
+
+                  {/* Connection info */}
+                  <Box
+                    p="sm"
+                    style={{
+                      background: '#f8fafc',
+                      borderRadius: 10,
+                      marginBottom: 12,
+                    }}
+                  >
+                    <Group justify="space-between">
+                      <Group gap="xs">
+                        <div
+                          className={`${classes.statusDot} ${isConnected ? classes.connected : ''}`}
+                          style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: '50%',
+                            backgroundColor: statusColor,
+                          }}
+                          title={isConnected ? 'Verbunden' : isDisconnected ? 'Nicht verbunden' : 'Unbekannt'}
+                        />
+                        <Text size="sm" c="dimmed">
+                          {isConnected ? 'Verbunden' : isDisconnected ? 'Nicht verbunden' : 'Unbekannt'}
+                        </Text>
+                      </Group>
+                      <Text size="xs" c="dimmed" ff="monospace">
+                        {printer.host}:{printer.port}
+                      </Text>
+                    </Group>
+                  </Box>
+
+                  {printer.last_connected && (
+                    <Text size="xs" c="dimmed">
+                      Zuletzt verbunden: {new Date(printer.last_connected).toLocaleString('de-DE')}
+                    </Text>
+                  )}
+                </Box>
+              </Card>
+            );
+          })}
         </SimpleGrid>
       )}
 

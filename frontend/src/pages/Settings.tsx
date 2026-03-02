@@ -20,6 +20,7 @@ import {
 } from '@mantine/core';
 import { IconRefresh, IconDownload, IconCheck, IconAlertCircle, IconPlug, IconSettings, IconCopy, IconTrash, IconUser, IconCloud, IconInfoCircle, IconCode, IconList } from '@tabler/icons-react';
 import { extensionsApi, slicingApi, systemApi } from '../api/client';
+import classes from './Settings.module.css';
 
 interface UpdateInfo {
   version: string;

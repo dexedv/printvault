@@ -32,6 +32,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useProjectsStore } from '../store';
 import { projectsApi } from '../api/client';
+import classes from './Projects.module.css';
 
 export default function Projects() {
   const navigate = useNavigate();
@@ -122,45 +123,68 @@ export default function Projects() {
 
       {filteredProjekte.length === 0 ? (
         <Center py="xl">
-          <Stack align="center" gap="sm">
-            <IconFolder size={48} color="#94a3b8" />
-            <Text c="dimmed">Noch keine Projekte</Text>
+          <Stack align="center" gap="md" p="xl">
+            <Box className={classes.emptyIcon} style={{ width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <IconFolder size={36} color="#f59e0b" />
+            </Box>
+            <Text c="dimmed" size="lg">Noch keine Projekte</Text>
             <Button variant="light" onClick={openCreateModal}>
               Erstes Projekt erstellen
             </Button>
           </Stack>
         </Center>
       ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
           {filteredProjekte.map((project) => (
             <Card
               key={project.id}
-              padding="md"
+              padding={0}
               withBorder
+              className={classes.projectCard}
               style={{ cursor: 'pointer' }}
               onClick={() => navigate(`/projects/${project.id}`)}
             >
-              <Group justify="space-between" mb="xs">
-                <Text fw={600} size="lg">
-                  {project.name}
-                </Text>
-                <Menu shadow="md" width={150} position="bottom-end">
-                  <Menu.Target>
-                    <ActionIcon
-                      variant="subtle"
-                      color="gray"
-                      size="sm"
-                      onClick={(e) => e.stopPropagation()}
+              <Box style={{
+                height: '6px',
+                background: 'linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)',
+              }} />
+              <Box p="md">
+                <Group justify="space-between" mb="sm">
+                  <Group gap="sm">
+                    <Box
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 10,
+                        background: '#fef3c7',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
                     >
-                      <IconDotsVertical size={16} />
-                    </ActionIcon>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    <Menu.Item
-                      leftSection={<IconVersions size={16} />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/projects/${project.id}`);
+                      <IconFolder size={20} color="#f59e0b" />
+                    </Box>
+                    <Text fw={600} size="md">
+                      {project.name}
+                    </Text>
+                  </Group>
+                  <Menu shadow="md" width={150} position="bottom-end">
+                    <Menu.Target>
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        size="sm"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <IconDotsVertical size={16} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item
+                        leftSection={<IconVersions size={16} />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/projects/${project.id}`);
                       }}
                     >
                       View Versions
@@ -204,6 +228,7 @@ export default function Projects() {
               <Text size="xs" c="dimmed">
                 Updated: {new Date(project.updated_at).toLocaleDateString()}
               </Text>
+              </Box>
             </Card>
           ))}
         </SimpleGrid>

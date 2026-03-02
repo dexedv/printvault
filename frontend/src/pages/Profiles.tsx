@@ -17,13 +17,28 @@ import {
   Select,
   Group,
   Switch,
+  Box,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconPlus, IconDotsVertical, IconTrash, IconEdit } from '@tabler/icons-react';
+import { IconPlus, IconDotsVertical, IconTrash, IconEdit, IconSettings } from '@tabler/icons-react';
 import { profilesApi } from '../api/client';
 import type { PrintProfile } from '@shared/types';
+import classes from './Profiles.module.css';
 
 const MATERIALS = ['PLA', 'PETG', 'ABS', 'TPU', 'ASA', 'PC', 'PA', 'PVB', 'PP', 'PEI'];
+
+const MATERIAL_COLORS: Record<string, string> = {
+  PLA: '#22c55e',
+  PETG: '#3b82f6',
+  ABS: '#f97316',
+  TPU: '#ec4899',
+  ASA: '#a855f7',
+  PC: '#06b6d4',
+  PA: '#84cc16',
+  PVB: '#f59e0b',
+  PP: '#6366f1',
+  PEI: '#ef4444',
+};
 
 export default function Profiles() {
   const [profiles, setProfiles] = useState<PrintProfile[]>([]);
@@ -133,67 +148,94 @@ export default function Profiles() {
 
       {profiles.length === 0 ? (
         <Center py="xl">
-          <Stack align="center" gap="sm">
-            <Text c="dimmed">Keine Druckprofile</Text>
+          <Stack align="center" gap="md" p="xl">
+            <Box className={classes.emptyIcon} style={{ width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <IconSettings size={36} color="#6366f1" />
+            </Box>
+            <Text c="dimmed" size="lg">Keine Druckprofile</Text>
             <Button variant="light" onClick={() => { resetForm(); openModal(); }}>
               Erstes Profil erstellen
             </Button>
           </Stack>
         </Center>
       ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
-          {profiles.map((profile) => (
-            <Card key={profile.id} padding="md" withBorder>
-              <Group justify="space-between" mb="sm">
-                <div>
-                  <Group gap="xs">
-                    <Text fw={500}>{profile.name}</Text>
-                    {profile.is_default && <Badge size="sm" color="blue">Default</Badge>}
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
+          {profiles.map((profile) => {
+            const materialColor = MATERIAL_COLORS[profile.material] || '#6b7280';
+            return (
+              <Card key={profile.id} padding={0} withBorder className={classes.profileCard}>
+                <Box style={{
+                  height: '6px',
+                  background: `linear-gradient(90deg, ${materialColor} 0%, ${materialColor}cc 100%)`,
+                }} />
+                <Box p="md">
+                  <Group justify="space-between" mb="md">
+                    <Group gap="sm">
+                      <Box
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 10,
+                          background: `${materialColor}20`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <IconSettings size={20} color={materialColor} />
+                      </Box>
+                      <div>
+                        <Group gap="xs">
+                          <Text fw={600} size="md">{profile.name}</Text>
+                          {profile.is_default && <Badge size="xs" color="blue" variant="filled">Standard</Badge>}
+                        </Group>
+                        <Badge size="sm" variant="light" color={materialColor}>{profile.material}</Badge>
+                      </div>
+                    </Group>
+                    <Menu shadow="md" width={150} position="bottom-end">
+                      <Menu.Target>
+                        <ActionIcon variant="subtle" color="gray" size="lg">
+                          <IconDotsVertical size={18} />
+                        </ActionIcon>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        <Menu.Item leftSection={<IconEdit size={16} />} onClick={() => openEdit(profile)}>
+                          Bearbeiten
+                        </Menu.Item>
+                        <Menu.Divider />
+                        <Menu.Item color="red" leftSection={<IconTrash size={16} />} onClick={() => handleDelete(profile.id)}>
+                          Löschen
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
                   </Group>
-                  <Text size="xs" c="dimmed">{profile.material}</Text>
-                </div>
-                <Menu shadow="md" width={150} position="bottom-end">
-                  <Menu.Target>
-                    <ActionIcon variant="subtle" color="gray">
-                      <IconDotsVertical size={16} />
-                    </ActionIcon>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    <Menu.Item leftSection={<IconEdit size={16} />} onClick={() => openEdit(profile)}>
-                      Edit
-                    </Menu.Item>
-                    <Menu.Divider />
-                    <Menu.Item color="red" leftSection={<IconTrash size={16} />} onClick={() => handleDelete(profile.id)}>
-                      Delete
-                    </Menu.Item>
-                  </Menu.Dropdown>
-                </Menu>
-              </Group>
 
-              <SimpleGrid cols={2} spacing="xs">
-                <div>
-                  <Text size="xs" c="dimmed">Nozzle</Text>
-                  <Text size="sm">{profile.nozzle_temp}°C</Text>
-                </div>
-                <div>
-                  <Text size="xs" c="dimmed">Bed</Text>
-                  <Text size="sm">{profile.bed_temp}°C</Text>
-                </div>
-                <div>
-                  <Text size="xs" c="dimmed">Layer</Text>
-                  <Text size="sm">{profile.layer_height}mm</Text>
-                </div>
-                <div>
-                  <Text size="xs" c="dimmed">Speed</Text>
-                  <Text size="sm">{profile.print_speed}mm/s</Text>
-                </div>
-                <div>
-                  <Text size="xs" c="dimmed">Infill</Text>
-                  <Text size="sm">{profile.infill}%</Text>
-                </div>
-              </SimpleGrid>
-            </Card>
-          ))}
+                  <SimpleGrid cols={3} spacing="xs">
+                    <Box className={classes.statBox}>
+                      <Text size="xs" c="dimmed">Düse</Text>
+                      <Text fw={600} size="sm">{profile.nozzle_temp}°</Text>
+                    </Box>
+                    <Box className={classes.statBox}>
+                      <Text size="xs" c="dimmed">Bett</Text>
+                      <Text fw={600} size="sm">{profile.bed_temp}°</Text>
+                    </Box>
+                    <Box className={classes.statBox}>
+                      <Text size="xs" c="dimmed">Schicht</Text>
+                      <Text fw={600} size="sm">{profile.layer_height}</Text>
+                    </Box>
+                    <Box className={classes.statBox}>
+                      <Text size="xs" c="dimmed">Speed</Text>
+                      <Text fw={600} size="sm">{profile.print_speed}</Text>
+                    </Box>
+                    <Box className={classes.statBox}>
+                      <Text size="xs" c="dimmed">Füllung</Text>
+                      <Text fw={600} size="sm">{profile.infill}%</Text>
+                    </Box>
+                  </SimpleGrid>
+                </Box>
+              </Card>
+            );
+          })}
         </SimpleGrid>
       )}
 

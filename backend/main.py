@@ -9,7 +9,7 @@ from pathlib import Path
 
 from config import settings
 from db.session import init_db
-from api.routes import projects, files, filaments, profiles, printers, jobs, slicing, extensions, system
+from api.routes import projects, files, filaments, profiles, printers, jobs, slicing, extensions, system, customers, orders
 from api.websocket import handle_printer_websocket
 
 
@@ -61,6 +61,8 @@ app.include_router(jobs.router, prefix=settings.api_prefix)
 app.include_router(slicing.router, prefix=settings.api_prefix)
 app.include_router(extensions.router, prefix=settings.api_prefix)
 app.include_router(system.router, prefix=settings.api_prefix)
+app.include_router(customers.router, prefix=settings.api_prefix)
+app.include_router(orders.router, prefix=settings.api_prefix)
 
 
 # WebSocket endpoint

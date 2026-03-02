@@ -147,3 +147,40 @@ class JobSnapshot(SQLModel, table=True):
     extrusion_mm: Optional[float] = None
     speed_percent: Optional[float] = None
     extra_data: dict = Field(default={}, sa_column=Column(JSON))
+
+
+# Customers
+class Customer(SQLModel, table=True):
+    __tablename__ = "customers"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(max_length=255)
+    email: Optional[str] = Field(default=None, max_length=255)
+    phone: Optional[str] = Field(default=None, max_length=50)
+    company: Optional[str] = Field(default=None, max_length=255)
+    address: Optional[str] = Field(default=None)
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, sa_column=Column(DateTime, onupdate=func.now()))
+
+
+# Orders (with STL files and quantities)
+class Order(SQLModel, table=True):
+    __tablename__ = "orders"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    customer_id: int = Field(foreign_key="customers.id", ondelete="CASCADE")
+    status: str = Field(default="pending", max_length=20)  # pending, in_progress, completed, cancelled
+    quantity: int = Field(default=1)  # how many to print
+    printed_count: int = Field(default=0)  # how many already printed
+    stl_file_path: Optional[str] = Field(default=None, max_length=500)  # path to STL file
+    stl_filename: Optional[str] = Field(default=None, max_length=255)  # original filename
+    stl_volume: Optional[float] = None  # volume in cm³
+    filament_type: Optional[str] = Field(default=None, max_length=50)  # PLA, PETG, etc.
+    filament_color: Optional[str] = Field(default=None, max_length=100)
+    price: Optional[float] = None  # price for the order
+    priority: str = Field(default="normal", max_length=20)  # low, normal, high, urgent
+    due_date: Optional[datetime] = None
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, sa_column=Column(DateTime, onupdate=func.now()))

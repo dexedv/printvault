@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import classes from './Filaments.module.css';
 import {
   Title,
   Button,
@@ -20,6 +21,8 @@ import {
   Progress,
   Popover,
   UnstyledButton,
+  Box,
+  ThemeIcon,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
@@ -28,13 +31,27 @@ import {
   IconTrash,
   IconEdit,
   IconAlertTriangle,
-  IconPalette,
+  IconX,
+  IconPackage,
 } from '@tabler/icons-react';
 import { useFilamentsStore } from '../store';
 import { filamentsApi } from '../api/client';
 import type { Filament } from '@shared/types';
 
 const MATERIALS = ['PLA', 'PETG', 'ABS', 'TPU', 'ASA', 'PC', 'PA', 'PVB', 'PP', 'PEI'];
+
+const MATERIAL_COLORS: Record<string, string> = {
+  PLA: '#22c55e',
+  PETG: '#3b82f6',
+  ABS: '#f97316',
+  TPU: '#ec4899',
+  ASA: '#a855f7',
+  PC: '#06b6d4',
+  PA: '#84cc16',
+  PVB: '#f59e0b',
+  PP: '#6366f1',
+  PEI: '#ef4444',
+};
 
 const COLOR_PALETTE = [
   // Basic colors
@@ -63,6 +80,7 @@ export default function Filaments() {
   const { filaments, loading, setFilaments, setLoading, addFilament, updateFilament, removeFilament } = useFilamentsStore();
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [editingFilament, setEditingFilament] = useState<Filament | null>(null);
+  const [materialFilter, setMaterialFilter] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     material: 'PLA',
     color_name: '',
@@ -158,6 +176,12 @@ export default function Filaments() {
     return filament.remaining_weight_kg <= filament.low_stock_threshold;
   };
 
+  // Filter filaments by material
+  const filteredFilaments = useMemo(() => {
+    if (!materialFilter) return filaments;
+    return filaments.filter(f => f.material === materialFilter);
+  }, [filaments, materialFilter]);
+
   if (loading) {
     return (
       <Center h="100%">
@@ -175,78 +199,213 @@ export default function Filaments() {
         </Button>
       </Group>
 
-      {filaments.length === 0 ? (
+      {/* Material Filter Buttons */}
+      <Group gap="xs">
+        <UnstyledButton
+          onClick={() => setMaterialFilter(null)}
+          style={{
+            padding: '6px 12px',
+            borderRadius: '16px',
+            background: materialFilter === null ? '#228be6' : '#f1f3f5',
+            color: materialFilter === null ? 'white' : '#495057',
+            fontWeight: 500,
+            fontSize: '13px',
+            transition: 'all 0.15s',
+          }}
+        >
+          Alle
+        </UnstyledButton>
+        {MATERIALS.map((material) => {
+          const count = filaments.filter(f => f.material === material).length;
+          if (count === 0) return null;
+          return (
+            <UnstyledButton
+              key={material}
+              onClick={() => setMaterialFilter(material)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '16px',
+                background: materialFilter === material ? '#228be6' : '#f1f3f5',
+                color: materialFilter === material ? 'white' : '#495057',
+                fontWeight: 500,
+                fontSize: '13px',
+                transition: 'all 0.15s',
+              }}
+            >
+              {material} ({count})
+            </UnstyledButton>
+          );
+        })}
+        {materialFilter && (
+          <UnstyledButton
+            onClick={() => setMaterialFilter(null)}
+            style={{
+              padding: '4px 8px',
+              borderRadius: '50%',
+              background: '#f1f3f5',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <IconX size={14} />
+          </UnstyledButton>
+        )}
+      </Group>
+
+      {filteredFilaments.length === 0 ? (
         <Center py="xl">
           <Stack align="center" gap="sm">
-            <Text c="dimmed">Keine Filamente im Lager</Text>
+            <Text c="dimmed">
+              {materialFilter
+                ? `Keine ${materialFilter} Filamente im Lager`
+                : 'Keine Filamente im Lager'}
+            </Text>
             <Button variant="light" onClick={() => { resetForm(); openModal(); }}>
-              Erstes Filament hinzufügen
+              Filament hinzufügen
             </Button>
           </Stack>
         </Center>
       ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
-          {filaments.map((filament) => (
-            <Card key={filament.id} padding="md" withBorder>
-              <Group justify="space-between" mb="sm">
-                <Group>
-                  <ColorSwatch color={filament.color_hex} size={32} />
-                  <div>
-                    <Text fw={500}>{filament.color_name}</Text>
-                    <Text size="xs" c="dimmed">
-                      {filament.material}
-                    </Text>
-                  </div>
-                </Group>
-                <Menu shadow="md" width={150} position="bottom-end">
-                  <Menu.Target>
-                    <ActionIcon variant="subtle" color="gray">
-                      <IconDotsVertical size={16} />
-                    </ActionIcon>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    <Menu.Item leftSection={<IconEdit size={16} />} onClick={() => openEdit(filament)}>
-                      Edit
-                    </Menu.Item>
-                    <Menu.Divider />
-                    <Menu.Item
-                      color="red"
-                      leftSection={<IconTrash size={16} />}
-                      onClick={() => handleDelete(filament.id)}
-                    >
-                      Delete
-                    </Menu.Item>
-                  </Menu.Dropdown>
-                </Menu>
-              </Group>
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing="lg">
+          {filteredFilaments.map((filament) => {
+            const percent = getRemainingPercent(filament);
+            const lowStock = isLowStock(filament);
+            const materialColor = MATERIAL_COLORS[filament.material] || '#6b7280';
 
-              <Stack gap="xs">
-                <Group justify="space-between">
-                  <Text size="sm" c="dimmed">Remaining</Text>
-                  <Group gap="xs">
-                    <Text size="sm" fw={500}>
-                      {filament.remaining_weight_kg.toFixed(2)} kg
-                    </Text>
-                    {isLowStock(filament) && <IconAlertTriangle size={16} color="#f59e0b" />}
-                  </Group>
-                </Group>
-                <Progress
-                  value={getRemainingPercent(filament)}
-                  color={isLowStock(filament) ? 'orange' : 'blue'}
-                  size="sm"
+            return (
+              <Card
+                key={filament.id}
+                padding={0}
+                withBorder
+                className={classes.filamentCard}
+              >
+                {/* Colored top bar with material */}
+                <Box
+                  style={{
+                    height: '6px',
+                    background: `linear-gradient(90deg, ${materialColor} 0%, ${materialColor}cc 100%)`,
+                  }}
                 />
-                <Text size="xs" c="dimmed">
-                  {getRemainingPercent(filament).toFixed(0)}% of {filament.total_weight_kg} kg
-                </Text>
-              </Stack>
 
-              {filament.vendor && (
-                <Text size="xs" c="dimmed" mt="sm">
-                  Vendor: {filament.vendor}
-                </Text>
-              )}
-            </Card>
-          ))}
+                <Box p="md">
+                  {/* Header with color swatch and material badge */}
+                  <Group justify="space-between" mb="md">
+                    <Group gap="sm">
+                      <Box
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: 12,
+                          background: filament.color_hex,
+                          border: '3px solid white',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <ColorSwatch color={filament.color_hex} size={28} />
+                      </Box>
+                      <div>
+                        <Text fw={600} size="md" lineClamp={1}>
+                          {filament.color_name}
+                        </Text>
+                        <Badge
+                          size="sm"
+                          variant="filled"
+                          color={materialColor}
+                          style={{ marginTop: 2 }}
+                        >
+                          {filament.material}
+                        </Badge>
+                      </div>
+                    </Group>
+                    <Menu shadow="md" width={150} position="bottom-end">
+                      <Menu.Target>
+                        <ActionIcon variant="subtle" color="gray" size="lg">
+                          <IconDotsVertical size={18} />
+                        </ActionIcon>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        <Menu.Item leftSection={<IconEdit size={16} />} onClick={() => openEdit(filament)}>
+                          Bearbeiten
+                        </Menu.Item>
+                        <Menu.Divider />
+                        <Menu.Item
+                          color="red"
+                          leftSection={<IconTrash size={16} />}
+                          onClick={() => handleDelete(filament.id)}
+                        >
+                          Löschen
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
+                  </Group>
+
+                  {/* Weight info */}
+                  <Box
+                    mb="sm"
+                    p="sm"
+                    style={{
+                      background: '#f8fafc',
+                      borderRadius: 10,
+                    }}
+                  >
+                    <Group justify="space-between" mb="xs">
+                      <Group gap="xs">
+                        <IconPackage size={16} color="#64748b" />
+                        <Text size="xs" c="dimmed" tt="uppercase" fw={500}>Bestand</Text>
+                      </Group>
+                      {lowStock && (
+                        <Badge size="xs" color="orange" variant="light" leftSection={<IconAlertTriangle size={10} />}>
+                          Niedrig
+                        </Badge>
+                      )}
+                    </Group>
+                    <Group justify="space-between" align="flex-end">
+                      <Text fw={700} size="lg" style={{ color: materialColor }}>
+                        {filament.remaining_weight_kg.toFixed(2)} kg
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        von {filament.total_weight_kg} kg
+                      </Text>
+                    </Group>
+                  </Box>
+
+                  {/* Progress bar */}
+                  <Box mb="sm">
+                    <Group justify="space-between" mb={4}>
+                      <Text size="xs" c="dimmed">Füllstand</Text>
+                      <Text size="xs" fw={600} c={lowStock ? 'orange' : materialColor}>
+                        {percent.toFixed(0)}%
+                      </Text>
+                    </Group>
+                    <Progress
+                      value={percent}
+                      color={lowStock ? 'orange' : materialColor}
+                      size="md"
+                      radius="xl"
+                      animated={lowStock}
+                    />
+                  </Box>
+
+                  {/* Vendor and location */}
+                  <Group gap="xs" mt="xs">
+                    {filament.vendor && (
+                      <Badge variant="outline" color="gray" size="sm">
+                        {filament.vendor}
+                      </Badge>
+                    )}
+                    {filament.location && (
+                      <Badge variant="light" color="blue" size="sm">
+                        {filament.location}
+                      </Badge>
+                    )}
+                  </Group>
+                </Box>
+              </Card>
+            );
+          })}
         </SimpleGrid>
       )}
 

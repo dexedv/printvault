@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
-import { Badge, Group, Text } from '@mantine/core';
+import { Badge, Group, Text, UnstyledButton } from '@mantine/core';
 import {
   IconFiles,
   IconFolder,
@@ -11,6 +11,10 @@ import {
   IconHistory,
   IconSettings,
   IconPlug,
+  IconUsers,
+  IconShoppingCart,
+  IconChevronDown,
+  IconChevronRight,
 } from '@tabler/icons-react';
 
 import Library from './pages/Library';
@@ -23,17 +27,49 @@ import LiveMonitor from './pages/LiveMonitor';
 import Jobs from './pages/Jobs';
 import Settings from './pages/Settings';
 import Extensions from './pages/Extensions';
+import Customers from './pages/Customers';
+import Orders from './pages/Orders';
 import LoadingScreen from './components/LoadingScreen';
 import ErrorBoundary from './components/ErrorBoundary';
 
-const navItems = [
-  { to: '/library', label: 'Bibliothek', icon: IconFiles },
-  { to: '/projects', label: 'Projekte', icon: IconFolder },
-  { to: '/profiles', label: 'Profile', icon: IconTool },
+// Navigation structure with categories
+interface NavItem {
+  to?: string;
+  label: string;
+  icon?: React.ElementType;
+  children?: NavItem[];
+}
+
+const navItems: NavItem[] = [
+  // Categories with dropdowns at the top
+  {
+    label: 'Dateien',
+    icon: IconFiles,
+    children: [
+      { to: '/library', label: 'Bibliothek', icon: IconFiles },
+      { to: '/projects', label: 'Projekte', icon: IconFolder },
+    ],
+  },
+  {
+    label: 'Drucken',
+    icon: IconPrinter,
+    children: [
+      { to: '/printers', label: 'Drucker', icon: IconPrinter },
+      { to: '/monitor', label: 'Live-Überwachung', icon: IconGauge },
+      { to: '/jobs', label: 'Druckaufträge', icon: IconHistory },
+      { to: '/profiles', label: 'Profile', icon: IconTool },
+    ],
+  },
+  {
+    label: 'Verwaltung',
+    icon: IconShoppingCart,
+    children: [
+      { to: '/customers', label: 'Kunden', icon: IconUsers },
+      { to: '/orders', label: 'Aufträge', icon: IconShoppingCart },
+    ],
+  },
+  // Single items at the bottom
   { to: '/filaments', label: 'Filamente', icon: IconCube },
-  { to: '/printers', label: 'Drucker', icon: IconPrinter },
-  { to: '/monitor', label: 'Live-Überwachung', icon: IconGauge },
-  { to: '/jobs', label: 'Aufträge', icon: IconHistory },
   { to: '/extensions', label: 'Erweiterungen', icon: IconPlug },
 ];
 
@@ -71,6 +107,21 @@ function App() {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [appVersion, setAppVersion] = useState('1.0.7');
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set(['Dateien', 'Drucken', 'Verwaltung']) // All categories expanded by default
+  );
+
+  const toggleCategory = (label: string) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(label)) {
+        next.delete(label);
+      } else {
+        next.add(label);
+      }
+      return next;
+    });
+  };
 
   // Get version from Tauri
   useEffect(() => {
@@ -126,6 +177,49 @@ function App() {
         {/* Navigation */}
         <nav style={{ flex: 1, padding: '12px' }}>
           {navItems.map((item) => {
+            // Check if this item has children (is a category)
+            if (item.children) {
+              const isExpanded = expandedCategories.has(item.label);
+              const isChildActive = item.children.some(
+                child => location.pathname === child.to || location.pathname.startsWith(child.to || '')
+              );
+
+              return (
+                <div key={item.label}>
+                  <UnstyledButton
+                    onClick={() => toggleCategory(item.label)}
+                    style={{
+                      ...navLinkStyle(isChildActive),
+                      cursor: 'pointer',
+                      width: '100%',
+                    }}
+                  >
+                    {item.icon && <item.icon size={20} />}
+                    <span style={{ flex: 1 }}>{item.label}</span>
+                    {isExpanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+                  </UnstyledButton>
+                  {isExpanded && (
+                    <div style={{ paddingLeft: '16px', marginTop: '4px', marginBottom: '4px' }}>
+                      {item.children.map((child) => {
+                        const isActive = location.pathname === child.to;
+                        return (
+                          <Link
+                            to={child.to || '#'}
+                            key={child.to}
+                            style={navLinkStyle(isActive)}
+                          >
+                            {child.icon && <child.icon size={18} />}
+                            <span>{child.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            // Regular nav item
             const isActive = location.pathname === item.to ||
               (item.to !== '/library' && location.pathname.startsWith(item.to));
 
@@ -135,7 +229,7 @@ function App() {
                 key={item.to}
                 style={navLinkStyle(isActive)}
               >
-                <item.icon size={20} />
+                {item.icon && <item.icon size={20} />}
                 <span>{item.label}</span>
               </Link>
             );
@@ -170,7 +264,17 @@ function App() {
           padding: '0 24px'
         }}>
           <Text style={{ fontSize: '16px', fontWeight: 600, color: '#1e293b' }}>
-            {navItems.find(item => location.pathname.startsWith(item.to))?.label || 'Dashboard'}
+            {(() => {
+              // First check children in categories
+              for (const item of navItems) {
+                if (item.children) {
+                  const found = item.children.find(child => location.pathname === child.to);
+                  if (found) return found.label;
+                }
+              }
+              // Then check top-level items
+              return navItems.find(item => item.to && location.pathname.startsWith(item.to))?.label || 'Dashboard';
+            })()}
           </Text>
         </header>
 
@@ -187,6 +291,8 @@ function App() {
             <Route path="/monitor" element={<LiveMonitor />} />
             <Route path="/jobs" element={<Jobs />} />
             <Route path="/extensions" element={<Extensions />} />
+            <Route path="/customers" element={<Customers />} />
+            <Route path="/orders" element={<Orders />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </div>

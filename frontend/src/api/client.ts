@@ -272,6 +272,84 @@ export const systemApi = {
     apiClient.post('/system/logs/clear').then((r) => r.data),
 };
 
+// Customers API
+export interface Customer {
+  id?: number;
+  name: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  address?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const customersApi = {
+  list: (params?: { skip?: number; limit?: number; search?: string }) =>
+    apiClient.get<Customer[]>('/customers', { params }).then((r) => r.data),
+
+  get: (id: number) =>
+    apiClient.get<Customer>(`/customers/${id}`).then((r) => r.data),
+
+  create: (data: Partial<Customer>) =>
+    apiClient.post<Customer>('/customers', data).then((r) => r.data),
+
+  update: (id: number, data: Partial<Customer>) =>
+    apiClient.patch<Customer>(`/customers/${id}`, data).then((r) => r.data),
+
+  delete: (id: number) =>
+    apiClient.delete(`/customers/${id}`).then((r) => r.data),
+};
+
+// Orders API
+export interface Order {
+  id?: number;
+  customer_id: number;
+  customer_name?: string;
+  customer_email?: string;
+  status: string;
+  quantity: number;
+  printed_count: number;
+  stl_file_path?: string;
+  stl_filename?: string;
+  stl_volume?: number;
+  filament_type?: string;
+  filament_color?: string;
+  price?: number;
+  priority: string;
+  due_date?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const ordersApi = {
+  list: (params?: { skip?: number; limit?: number; status?: string; customer_id?: number; priority?: string }) =>
+    apiClient.get<Order[]>('/orders', { params }).then((r) => r.data),
+
+  get: (id: number) =>
+    apiClient.get<Order>(`/orders/${id}`).then((r) => r.data),
+
+  create: (data: Partial<Order>) =>
+    apiClient.post<Order>('/orders', data).then((r) => r.data),
+
+  update: (id: number, data: Partial<Order>) =>
+    apiClient.patch<Order>(`/orders/${id}`, data).then((r) => r.data),
+
+  delete: (id: number) =>
+    apiClient.delete(`/orders/${id}`).then((r) => r.data),
+
+  incrementPrinted: (id: number) =>
+    apiClient.post<{ printed_count: number; status: string }>(`/orders/${id}/increment`).then((r) => r.data),
+
+  decrementPrinted: (id: number) =>
+    apiClient.post<{ printed_count: number; status: string }>(`/orders/${id}/decrement`).then((r) => r.data),
+
+  count: (status?: string) =>
+    apiClient.get<{ count: number }>('/orders/count', { params: { status } }).then((r) => r.data),
+};
+
 // WebSocket
 export async function createPrinterWebSocket(printerId: number): Promise<WebSocket> {
   const baseUrl = await getApiBaseUrl();

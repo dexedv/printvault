@@ -1,0 +1,17 @@
+.filamentCard {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filamentCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
+}
+
+.colorSwatch {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease;
+}
+
+.filamentCard:hover .colorSwatch {
+  transform: scale(1.1);
+}

@@ -1,0 +1,21 @@
+.statCard {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1);
+}
+
+.jobCard {
+  transition: background-color 0.15s ease;
+}
+
+.jobCard:hover {
+  background-color: #f8fafc;
+}
+
+.emptyIcon {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  border-radius: 50%;
+}

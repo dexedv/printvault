@@ -10,10 +10,12 @@ import {
   IconEye,
   IconFilter,
   IconFile,
+  Icon3dCubeSphere,
 } from '@tabler/icons-react';
 import { useFilesStore } from '../store';
 import { filesApi } from '../api/client';
 import ModelViewer from '../components/ModelViewer';
+import classes from './Library.module.css';
 
 export default function Library() {
   const { files, loading, error, searchQuery, setFiles, setLoading, setError, setSearchQuery, addFile, removeFile } = useFilesStore();
@@ -146,87 +148,95 @@ export default function Library() {
       {filteredFiles.length === 0 ? (
         <Center py="xl">
           <Stack align="center" gap="md" p="xl">
-            <Box style={{
-              width: 64,
-              height: 64,
-              borderRadius: '50%',
-              background: '#f1f5f9',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <IconFile size={32} color="#94a3b8" />
+            <Box className={classes.emptyIcon} style={{ width: 80, height: 80 }}>
+              <Icon3dCubeSphere size={36} color="#94a3b8" />
             </Box>
-            <Text c="dimmed">Keine Dateien in der Bibliothek</Text>
+            <Text c="dimmed" size="lg">Keine Dateien in der Bibliothek</Text>
             <Button variant="light" onClick={handleUpload}>
               Erste Datei hochladen
             </Button>
           </Stack>
         </Center>
       ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing="md">
-          {filteredFiles.map((file) => (
-            <Card key={file.id} padding={0} withBorder style={{ overflow: 'hidden' }}>
-              {/* Thumbnail */}
-              <Box style={{
-                height: 160,
-                background: '#f8fafc',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                position: 'relative'
-              }} onClick={() => { setSelectedFile(file); openViewer(); }}>
-                {file.thumbnail_path ? (
-                  <Image
-                    src={`http://localhost:8000/${file.thumbnail_path}`}
-                    alt={file.original_name}
-                    h={160}
-                    fit="cover"
-                    w="100%"
-                  />
-                ) : (
-                  <IconEye size={40} color="#cbd5e1" />
-                )}
-              </Box>
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing="lg">
+          {filteredFiles.map((file) => {
+            const typeColor = getFileTypeColor(file.file_type);
+            return (
+              <Card key={file.id} padding={0} withBorder className={classes.card}>
+                {/* Colored top bar */}
+                <Box style={{
+                  height: '6px',
+                  background: typeColor === 'blue' ? 'linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%)'
+                    : typeColor === 'green' ? 'linear-gradient(90deg, #22c55e 0%, #4ade80 100%)'
+                    : typeColor === 'orange' ? 'linear-gradient(90deg, #f97316 0%, #fb923c 100%)'
+                    : 'linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%)',
+                }} />
 
-              {/* Info */}
-              <Stack gap={4} p="sm">
-                <Group justify="space-between">
-                  <Text fw={500} size="sm" style={{ flex: 1 }} truncate>
-                    {file.original_name}
-                  </Text>
-                  <Badge size="sm" color={getFileTypeColor(file.file_type)} variant="light">
-                    {file.file_type.toUpperCase()}
-                  </Badge>
-                </Group>
-                <Group gap="xs">
-                  <Text size="xs" c="dimmed">{formatFileSize(file.file_size)}</Text>
-                  {file.triangle_count && (
-                    <Text size="xs" c="dimmed">{file.triangle_count.toLocaleString()} tris</Text>
+                {/* Thumbnail */}
+                <Box style={{
+                  height: 160,
+                  background: '#f8fafc',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  position: 'relative'
+                }} onClick={() => { setSelectedFile(file); openViewer(); }}>
+                  {file.thumbnail_path ? (
+                    <Image
+                      src={`http://localhost:8000/${file.thumbnail_path}`}
+                      alt={file.original_name}
+                      h={160}
+                      fit="cover"
+                      w="100%"
+                      className={classes.thumbnail}
+                    />
+                  ) : (
+                    <Icon3dCubeSphere size={48} color="#cbd5e1" />
                   )}
-                </Group>
-                {file.volume && (
-                  <Text size="xs" c="dimmed">Volumen: {(file.volume / 1000).toFixed(2)} cm³</Text>
-                )}
+                </Box>
 
-                {/* Actions */}
-                <Menu shadow="md" width={150} position="bottom-end">
-                  <Menu.Target>
-                    <ActionIcon variant="subtle" color="gray" size="sm" style={{ position: 'absolute', bottom: 8, right: 8 }}>
-                      <IconDotsVertical size={16} />
-                    </ActionIcon>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    <Menu.Item leftSection={<IconEye size={14} />} onClick={() => { setSelectedFile(file); openViewer(); }}>Vorschau</Menu.Item>
-                    <Menu.Item leftSection={<IconDownload size={14} />}>Herunterladen</Menu.Item>
-                    <Menu.Divider />
-                    <Menu.Item color="red" leftSection={<IconTrash size={14} />} onClick={() => handleDelete(file.id)}>Löschen</Menu.Item>
-                  </Menu.Dropdown>
-                </Menu>
-              </Stack>
-            </Card>
-          ))}
+                {/* Info */}
+                <Box p="md">
+                  <Group justify="space-between" mb="xs">
+                    <Text fw={600} size="sm" style={{ flex: 1 }} truncate>
+                      {file.original_name}
+                    </Text>
+                    <Badge size="sm" color={typeColor} variant="filled">
+                      {file.file_type.toUpperCase()}
+                    </Badge>
+                  </Group>
+                  <Group gap="xs" mb="xs">
+                    <Text size="xs" c="dimmed">{formatFileSize(file.file_size)}</Text>
+                    {file.triangle_count && (
+                      <>
+                        <Text size="xs" c="dimmed">•</Text>
+                        <Text size="xs" c="dimmed">{file.triangle_count.toLocaleString()} tris</Text>
+                      </>
+                    )}
+                  </Group>
+                  {file.volume && (
+                    <Text size="xs" c="dimmed">Volumen: {(file.volume / 1000).toFixed(2)} cm³</Text>
+                  )}
+
+                  {/* Actions */}
+                  <Menu shadow="md" width={150} position="bottom-end">
+                    <Menu.Target>
+                      <ActionIcon variant="subtle" color="gray" size="sm" style={{ position: 'absolute', bottom: 12, right: 12 }}>
+                        <IconDotsVertical size={16} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item leftSection={<IconEye size={14} />} onClick={() => { setSelectedFile(file); openViewer(); }}>Vorschau</Menu.Item>
+                      <Menu.Item leftSection={<IconDownload size={14} />}>Herunterladen</Menu.Item>
+                      <Menu.Divider />
+                      <Menu.Item color="red" leftSection={<IconTrash size={14} />} onClick={() => handleDelete(file.id)}>Löschen</Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Box>
+              </Card>
+            );
+          })}
         </SimpleGrid>
       )}
 
