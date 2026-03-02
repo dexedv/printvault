@@ -351,6 +351,51 @@ export const ordersApi = {
     apiClient.get<{ count: number }>('/orders/count', { params: { status } }).then((r) => r.data),
 };
 
+// License Types
+export interface LicenseStatus {
+  installed: boolean;
+  valid: boolean;
+  tier?: string;
+  tier_name?: string;
+  expires?: string;
+  features?: {
+    max_printers: number;
+    max_filaments: number;
+    cloud_sync: boolean;
+    api_access: boolean;
+    support: boolean;
+  };
+  hardware_id?: string;
+  error?: string;
+}
+
+export interface LicenseVerifyResponse {
+  valid: boolean;
+  tier?: string;
+  tier_name?: string;
+  expires?: string;
+  features?: any;
+  error?: string;
+}
+
+// License API
+export const licenseApi = {
+  getStatus: () =>
+    apiClient.get<LicenseStatus>('/license/status').then((r) => r.data),
+
+  verify: (licenseKey: string) =>
+    apiClient.post<LicenseVerifyResponse>('/license/verify', { license_key: licenseKey }).then((r) => r.data),
+
+  activate: (licenseKey: string) =>
+    apiClient.post<{ success: boolean; message: string; tier: string; expires: string }>('/license/activate', { license_key: licenseKey }).then((r) => r.data),
+
+  deactivate: () =>
+    apiClient.post<{ success: boolean; message: string }>('/license/deactivate').then((r) => r.data),
+
+  getFeatures: () =>
+    apiClient.get<{ tiers: any; current_hardware_id: string }>('/license/features').then((r) => r.data),
+};
+
 // WebSocket
 export async function createPrinterWebSocket(printerId: number): Promise<WebSocket> {
   const baseUrl = await getApiBaseUrl();

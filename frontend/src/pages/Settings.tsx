@@ -18,8 +18,8 @@ import {
   Box,
   Tabs,
 } from '@mantine/core';
-import { IconRefresh, IconDownload, IconCheck, IconAlertCircle, IconPlug, IconSettings, IconCopy, IconTrash, IconUser, IconCloud, IconInfoCircle, IconCode, IconList } from '@tabler/icons-react';
-import { extensionsApi, slicingApi, systemApi } from '../api/client';
+import { IconRefresh, IconDownload, IconCheck, IconAlertCircle, IconPlug, IconSettings, IconCopy, IconTrash, IconUser, IconCloud, IconInfoCircle, IconCode, IconList, IconKey, IconShieldCheck, IconShieldX, IconDiamond } from '@tabler/icons-react';
+import { extensionsApi, slicingApi, systemApi, licenseApi } from '../api/client';
 import classes from './Settings.module.css';
 
 interface UpdateInfo {
@@ -61,6 +61,15 @@ export default function Settings() {
   const [logs, setLogs] = useState('');
   const [logsLoading, setLogsLoading] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+
+  // License state
+  const [licenseStatus, setLicenseStatus] = useState<any>(null);
+  const [licenseLoading, setLicenseLoading] = useState(true);
+  const [licenseKey, setLicenseKey] = useState('');
+  const [licenseActivating, setLicenseActivating] = useState(false);
+  const [licenseError, setLicenseError] = useState<string | null>(null);
+  const [licenseSuccess, setLicenseSuccess] = useState<string | null>(null);
+  const [availableTiers, setAvailableTiers] = useState<any>(null);
 
   useEffect(() => {
     // Get version from Tauri or Electron
@@ -109,7 +118,53 @@ export default function Settings() {
     loadExtensions();
     loadSlicers();
     loadLogs();
+    loadLicenseStatus();
   }, []);
+
+  const loadLicenseStatus = async () => {
+    setLicenseLoading(true);
+    try {
+      const [status, tiers] = await Promise.all([
+        licenseApi.getStatus(),
+        licenseApi.getFeatures()
+      ]);
+      setLicenseStatus(status);
+      setAvailableTiers(tiers);
+    } catch (err) {
+      console.error('Failed to load license status:', err);
+    } finally {
+      setLicenseLoading(false);
+    }
+  };
+
+  const handleActivateLicense = async () => {
+    if (!licenseKey.trim()) return;
+
+    setLicenseActivating(true);
+    setLicenseError(null);
+    setLicenseSuccess(null);
+
+    try {
+      const result = await licenseApi.activate(licenseKey.trim());
+      setLicenseSuccess(result.message);
+      setLicenseKey('');
+      loadLicenseStatus();
+    } catch (err: any) {
+      setLicenseError(err.response?.data?.detail || err.message || 'Aktivierung fehlgeschlagen');
+    } finally {
+      setLicenseActivating(false);
+    }
+  };
+
+  const handleDeactivateLicense = async () => {
+    try {
+      await licenseApi.deactivate();
+      loadLicenseStatus();
+      setLicenseSuccess('Lizenz erfolgreich deaktiviert');
+    } catch (err: any) {
+      setLicenseError(err.message || 'Deaktivierung fehlgeschlagen');
+    }
+  };
 
   const loadExtensions = async () => {
     setExtensionsLoading(true);
@@ -315,6 +370,9 @@ export default function Settings() {
           </Tabs.Tab>
           <Tabs.Tab value="logs" leftSection={<IconList size={16} />}>
             Logs
+          </Tabs.Tab>
+          <Tabs.Tab value="license" leftSection={<IconKey size={16} />}>
+            Lizenz
           </Tabs.Tab>
         </Tabs.List>
 
@@ -614,6 +672,251 @@ export default function Settings() {
               </Text>
             </Stack>
           </Card>
+        </Tabs.Panel>
+
+        {/* License Tab */}
+        <Tabs.Panel value="license" pt="md">
+          <Stack gap="md">
+            {/* Current License Status */}
+            <Card padding="md" withBorder>
+              <Group justify="space-between" mb="md">
+                <Group gap="sm">
+                  <IconShieldCheck size={24} color={licenseStatus?.valid ? '#22c55e' : '#6b7280'} />
+                  <Title order={4}>Lizenzstatus</Title>
+                </Group>
+                <Button variant="light" size="xs" leftSection={<IconRefresh size={14} />} onClick={loadLicenseStatus} loading={licenseLoading}>
+                  Aktualisieren
+                </Button>
+              </Group>
+
+              {licenseLoading ? (
+                <Center p="xl">
+                  <Loader size="sm" />
+                </Center>
+              ) : licenseStatus?.valid ? (
+                <Box>
+                  <Group gap="lg">
+                    <Box
+                      style={{
+                        width: 80,
+                        height: 80,
+                        borderRadius: 16,
+                        background: licenseStatus?.tier === 'enterprise'
+                          ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
+                          : licenseStatus?.tier === 'pro'
+                          ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                          : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {licenseStatus?.tier === 'enterprise' ? (
+                        <IconDiamond size={40} color="white" />
+                      ) : licenseStatus?.tier === 'pro' ? (
+                        <IconShieldCheck size={40} color="white" />
+                      ) : (
+                        <IconKey size={40} color="white" />
+                      )}
+                    </Box>
+                    <div>
+                      <Badge
+                        size="lg"
+                        variant="filled"
+                        color={licenseStatus?.tier === 'enterprise' ? 'violet' : licenseStatus?.tier === 'pro' ? 'blue' : 'gray'}
+                        mb="xs"
+                      >
+                        {licenseStatus?.tier_name || 'Free'}
+                      </Badge>
+                      <Text size="sm" c="dimmed">
+                        Gültig bis: <Text span fw={500}>{licenseStatus?.expires}</Text>
+                      </Text>
+                      {licenseStatus?.features && (
+                        <Group gap="xs" mt="xs">
+                          {licenseStatus.features.max_printers > 0 && (
+                            <Badge size="sm" variant="light">Drucker: {licenseStatus.features.max_printers === -1 ? '∞' : licenseStatus.features.max_printers}</Badge>
+                          )}
+                          {licenseStatus.features.cloud_sync && (
+                            <Badge size="sm" variant="light" color="cyan">Cloud Sync</Badge>
+                          )}
+                          {licenseStatus.features.api_access && (
+                            <Badge size="sm" variant="light" color="grape">API</Badge>
+                          )}
+                        </Group>
+                      )}
+                    </div>
+                  </Group>
+
+                  {availableTiers?.current_hardware_id && (
+                    <Text size="xs" c="dimmed" mt="md">
+                      Hardware-ID: <Text span ff="monospace">{availableTiers.current_hardware_id}</Text>
+                    </Text>
+                  )}
+
+                  <Button
+                    variant="light"
+                    color="red"
+                    size="sm"
+                    leftSection={<IconShieldX size={16} />}
+                    mt="md"
+                    onClick={handleDeactivateLicense}
+                  >
+                    Lizenz deaktivieren
+                  </Button>
+                </Box>
+              ) : (
+                <Stack gap="sm">
+                  <Alert icon={<IconShieldX size={16} />} color="gray" title="Keine gültige Lizenz">
+                    {licenseStatus?.installed
+                      ? licenseStatus?.error || 'Lizenz ist abgelaufen oder ungültig'
+                      : 'Keine Lizenz installiert'}
+                  </Alert>
+                  <Text size="sm" c="dimmed">
+                    Hardware-ID für Lizenz-Erstellung: <Text span ff="monospace" fw={500}>{availableTiers?.current_hardware_id}</Text>
+                  </Text>
+                </Stack>
+              )}
+            </Card>
+
+            {/* Activate License */}
+            <Card padding="md" withBorder>
+              <Title order={4} mb="md">Lizenz aktivieren</Title>
+
+              {licenseSuccess && (
+                <Alert icon={<IconCheck size={16} />} color="green" mb="md" withCloseButton onClose={() => setLicenseSuccess(null)}>
+                  {licenseSuccess}
+                </Alert>
+              )}
+
+              {licenseError && (
+                <Alert icon={<IconAlertCircle size={16} />} color="red" mb="md" withCloseButton onClose={() => setLicenseError(null)}>
+                  {licenseError}
+                </Alert>
+              )}
+
+              <Stack gap="md">
+                <TextInput
+                  label="Lizenzschlüssel"
+                  placeholder="XXXX-XXXX-XXXX-PRO-XXXX"
+                  value={licenseKey}
+                  onChange={(e) => setLicenseKey(e.target.value)}
+                  leftSection={<IconKey size={16} />}
+                  description="Geben Sie Ihren Lizenzschlüssel ein, um die App zu aktivieren."
+                />
+
+                <Button
+                  onClick={handleActivateLicense}
+                  loading={licenseActivating}
+                  disabled={!licenseKey.trim()}
+                  leftSection={<IconShieldCheck size={18} />}
+                >
+                  Lizenz aktivieren
+                </Button>
+              </Stack>
+            </Card>
+
+            {/* Available Tiers */}
+            <Card padding="md" withBorder>
+              <Title order={4} mb="md">Lizenz-Varianten</Title>
+
+              <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+                {/* Free */}
+                <Box
+                  p="md"
+                  style={{
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 12,
+                    background: '#f8fafc',
+                  }}
+                >
+                  <Group gap="xs" mb="sm">
+                    <Text fw={700}>Free</Text>
+                    <Badge color="gray" variant="light">Kostenlos</Badge>
+                  </Group>
+                  <Text size="xs" c="dimmed" mb="sm">Für Einsteiger</Text>
+                  <Stack gap={4}>
+                    <Text size="xs">✓ 1 Drucker</Text>
+                    <Text size="xs">✓ 10 Filamente</Text>
+                    <Text size="xs" c="dimmed">✗ Cloud Sync</Text>
+                    <Text size="xs" c="dimmed">✗ API Zugang</Text>
+                  </Stack>
+                </Box>
+
+                {/* Pro */}
+                <Box
+                  p="md"
+                  style={{
+                    border: '2px solid #3b82f6',
+                    borderRadius: 12,
+                    background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                    position: 'relative',
+                  }}
+                >
+                  <Badge
+                    size="xs"
+                    color="blue"
+                    style={{
+                      position: 'absolute',
+                      top: -10,
+                      right: 8,
+                    }}
+                  >
+                    Beliebt
+                  </Badge>
+                  <Group gap="xs" mb="sm">
+                    <Text fw={700}>Pro</Text>
+                    <Badge color="blue" variant="filled">19,99€/Jahr</Badge>
+                  </Group>
+                  <Text size="xs" c="dimmed" mb="sm">Für Hobby-Drucker</Text>
+                  <Stack gap={4}>
+                    <Text size="xs">✓ 10 Drucker</Text>
+                    <Text size="xs">✓ 100 Filamente</Text>
+                    <Text size="xs">✓ Cloud Sync</Text>
+                    <Text size="xs">✓ API Zugang</Text>
+                  </Stack>
+                </Box>
+
+                {/* Enterprise */}
+                <Box
+                  p="md"
+                  style={{
+                    border: '2px solid #8b5cf6',
+                    borderRadius: 12,
+                    background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
+                    position: 'relative',
+                  }}
+                >
+                  <Badge
+                    size="xs"
+                    color="violet"
+                    style={{
+                      position: 'absolute',
+                      top: -10,
+                      right: 8,
+                    }}
+                  >
+                    Professionell
+                  </Badge>
+                  <Group gap="xs" mb="sm">
+                    <Text fw={700}>Enterprise</Text>
+                    <Badge color="violet" variant="filled">49,99€/Jahr</Badge>
+                  </Group>
+                  <Text size="xs" c="dimmed" mb="sm">Für Unternehmen</Text>
+                  <Stack gap={4}>
+                    <Text size="xs">✓ Unbegrenzt Drucker</Text>
+                    <Text size="xs">✓ Unbegrenzt Filamente</Text>
+                    <Text size="xs">✓ Cloud Sync</Text>
+                    <Text size="xs">✓ API Zugang</Text>
+                    <Text size="xs">✓ Support</Text>
+                  </Stack>
+                </Box>
+              </SimpleGrid>
+
+              <Text size="xs" c="dimmed" mt="md">
+                Kontaktieren Sie uns für eine Lizenz: info@printvault.example
+              </Text>
+            </Card>
+          </Stack>
         </Tabs.Panel>
       </Tabs>
     </Stack>
