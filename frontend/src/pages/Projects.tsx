@@ -28,6 +28,7 @@ import {
   IconFolder,
   IconPlus,
   IconVersions,
+  IconRefresh,
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { useProjectsStore } from '../store';
@@ -42,9 +43,11 @@ export default function Projects() {
   const [newProject, setNewProject] = useState({ name: '', description: '', tags: '' as string | string[] });
   const [limitModalOpen, setLimitModalOpen] = useState(false);
   const [limitInfo, setLimitInfo] = useState<{ resource: string; current: number; limit: number }>({ resource: 'projects', current: 0, limit: 0 });
+  const [refreshing, setRefreshing] = useState(false);
 
-  const loadProjekte = async () => {
-    setLoading(true);
+  const loadProjekte = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     try {
       const data = await projectsApi.list({ limit: 100 });
       setProjects(data);
@@ -52,7 +55,12 @@ export default function Projects() {
       setError(err.message);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    loadProjekte(true);
   };
 
   useEffect(() => {
@@ -114,12 +122,25 @@ export default function Projects() {
     <Stack gap="md">
       <Group justify="space-between">
         <Title order={2}>Projekte</Title>
-        <Button
-          leftSection={<IconPlus size={18} />}
-          onClick={openCreateModal}
-        >
-          Neues Projekt
-        </Button>
+        <Group gap="sm">
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="lg"
+            radius="md"
+            onClick={handleRefresh}
+            loading={refreshing}
+            title="Neu laden"
+          >
+            <IconRefresh size={20} />
+          </ActionIcon>
+          <Button
+            leftSection={<IconPlus size={18} />}
+            onClick={openCreateModal}
+          >
+            Neues Projekt
+          </Button>
+        </Group>
       </Group>
 
       <TextInput

@@ -39,6 +39,7 @@ import {
   IconBrandWindows,
   IconStack2,
   IconDroplet,
+  IconRefresh,
 } from '@tabler/icons-react';
 import { useFilamentsStore } from '../store';
 import { filamentsApi } from '../api/client';
@@ -93,6 +94,7 @@ export default function Filaments() {
   const [materialFilter, setMaterialFilter] = useState<string | null>(null);
   const [limitModalOpen, setLimitModalOpen] = useState(false);
   const [limitInfo, setLimitInfo] = useState({ resource: 'filaments', current: 0, limit: 5 });
+  const [refreshing, setRefreshing] = useState(false);
   const [formData, setFormData] = useState({
     material: 'PLA',
     color_name: '',
@@ -106,8 +108,9 @@ export default function Filaments() {
     low_stock_threshold: 0.1,
   });
 
-  const loadFilaments = async () => {
-    setLoading(true);
+  const loadFilaments = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     try {
       const data = await filamentsApi.list({ limit: 100 });
       setFilaments(data);
@@ -115,7 +118,12 @@ export default function Filaments() {
       console.error(err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    loadFilaments(true);
   };
 
   useEffect(() => {
@@ -227,9 +235,22 @@ export default function Filaments() {
             <Text size="sm" c="dimmed">{filaments.length} Filamente im Lager</Text>
           </div>
         </Group>
-        <Button leftSection={<IconPlus size={18} />} onClick={() => { resetForm(); openModal(); }} size="md">
-          Filament hinzufügen
-        </Button>
+        <Group gap="sm">
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="lg"
+            radius="md"
+            onClick={handleRefresh}
+            loading={refreshing}
+            title="Neu laden"
+          >
+            <IconRefresh size={20} />
+          </ActionIcon>
+          <Button leftSection={<IconPlus size={18} />} onClick={() => { resetForm(); openModal(); }} size="md">
+            Filament hinzufügen
+          </Button>
+        </Group>
       </Group>
 
       {/* Material Filter Pills */}

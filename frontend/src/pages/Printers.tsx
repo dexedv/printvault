@@ -42,9 +42,11 @@ export default function Printers() {
   });
   const [limitModalOpen, setLimitModalOpen] = useState(false);
   const [limitInfo, setLimitInfo] = useState<{ resource: string; current: number; limit: number }>({ resource: 'printers', current: 0, limit: 0 });
+  const [refreshing, setRefreshing] = useState(false);
 
-  const loadPrinters = async () => {
-    setLoading(true);
+  const loadPrinters = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     try {
       const data = await printersApi.list();
       setPrinters(data);
@@ -54,7 +56,12 @@ export default function Printers() {
       console.error(err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    loadPrinters(true);
   };
 
   const checkAllConnections = async (printerList: Printer[]) => {
@@ -161,9 +168,22 @@ export default function Printers() {
     <Stack gap="md">
       <Group justify="space-between">
         <Title order={2}>Drucker</Title>
-        <Button leftSection={<IconPlus size={18} />} onClick={() => { resetForm(); openModal(); }}>
-          Drucker hinzufügen
-        </Button>
+        <Group gap="sm">
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="lg"
+            radius="md"
+            onClick={handleRefresh}
+            loading={refreshing}
+            title="Neu laden"
+          >
+            <IconRefresh size={20} />
+          </ActionIcon>
+          <Button leftSection={<IconPlus size={18} />} onClick={() => { resetForm(); openModal(); }}>
+            Drucker hinzufügen
+          </Button>
+        </Group>
       </Group>
 
       {printers.length === 0 ? (

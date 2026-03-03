@@ -32,6 +32,7 @@ import {
   IconMapPin,
   IconNotes,
   IconUsers,
+  IconRefresh,
 } from '@tabler/icons-react';
 import { customersApi, Customer } from '../api/client';
 import LimitExceededModal from '../components/LimitExceededModal';
@@ -57,9 +58,11 @@ export default function Customers() {
   });
   const [limitModalOpen, setLimitModalOpen] = useState(false);
   const [limitInfo, setLimitInfo] = useState<{ resource: string; current: number; limit: number }>({ resource: 'customers', current: 0, limit: 0 });
+  const [refreshing, setRefreshing] = useState(false);
 
-  const loadCustomers = async () => {
-    setLoading(true);
+  const loadCustomers = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     try {
       const data = await customersApi.list({
         skip: (page - 1) * limit,
@@ -75,7 +78,12 @@ export default function Customers() {
       console.error('Failed to load customers:', err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    loadCustomers(true);
   };
 
   useEffect(() => {
@@ -147,7 +155,25 @@ export default function Customers() {
 
   return (
     <Stack gap="md">
-      <Title order={2}>Kundenverwaltung</Title>
+      <Group justify="space-between">
+        <Title order={2}>Kundenverwaltung</Title>
+        <Group gap="sm">
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="lg"
+            radius="md"
+            onClick={handleRefresh}
+            loading={refreshing}
+            title="Neu laden"
+          >
+            <IconRefresh size={20} />
+          </ActionIcon>
+          <Button leftSection={<IconPlus size={16} />} onClick={openNewCustomer}>
+            Neuer Kunde
+          </Button>
+        </Group>
+      </Group>
 
       <Card padding="md" withBorder>
         <Group justify="space-between" mb="md">
@@ -162,9 +188,6 @@ export default function Customers() {
             />
             <Button variant="light" onClick={handleSearch}>Suchen</Button>
           </Group>
-          <Button leftSection={<IconPlus size={16} />} onClick={openNewCustomer}>
-            Neuer Kunde
-          </Button>
         </Group>
 
         {loading ? (

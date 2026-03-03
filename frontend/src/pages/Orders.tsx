@@ -37,6 +37,7 @@ import {
   IconClock,
   IconAlertTriangle,
   IconShoppingCart,
+  IconRefresh,
 } from '@tabler/icons-react';
 import { ordersApi, customersApi, Order, Customer } from '../api/client';
 import LimitExceededModal from '../components/LimitExceededModal';
@@ -97,9 +98,11 @@ export default function Orders() {
   });
   const [limitModalOpen, setLimitModalOpen] = useState(false);
   const [limitInfo, setLimitInfo] = useState<{ resource: string; current: number; limit: number }>({ resource: 'orders', current: 0, limit: 0 });
+  const [refreshing, setRefreshing] = useState(false);
 
-  const loadOrders = async () => {
-    setLoading(true);
+  const loadOrders = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     try {
       const data = await ordersApi.list({
         skip: (page - 1) * limit,
@@ -115,7 +118,12 @@ export default function Orders() {
       console.error('Failed to load orders:', err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    loadOrders(true);
   };
 
   const loadCustomers = async () => {
@@ -259,7 +267,25 @@ export default function Orders() {
 
   return (
     <Stack gap="md">
-      <Title order={2}>Auftragsverwaltung</Title>
+      <Group justify="space-between">
+        <Title order={2}>Auftragsverwaltung</Title>
+        <Group gap="sm">
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="lg"
+            radius="md"
+            onClick={handleRefresh}
+            loading={refreshing}
+            title="Neu laden"
+          >
+            <IconRefresh size={20} />
+          </ActionIcon>
+          <Button leftSection={<IconPlus size={16} />} onClick={openNewOrder}>
+            Neuer Auftrag
+          </Button>
+        </Group>
+      </Group>
 
       <Card padding="md" withBorder>
         <Group justify="space-between" mb="md">
@@ -279,9 +305,6 @@ export default function Orders() {
               style={{ width: 200 }}
             />
           </Group>
-          <Button leftSection={<IconPlus size={16} />} onClick={openNewOrder}>
-            Neuer Auftrag
-          </Button>
         </Group>
 
         {loading ? (
