@@ -11,6 +11,7 @@ from utils.file_utils import (
     get_file_type, generate_unique_filename, get_file_size_mb
 )
 from config import settings
+from sqlalchemy import func
 from api.routes.license import check_limit
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -66,7 +67,7 @@ def create_project(
 ):
     """Create a new project"""
     # Check license limit
-    current_count = len(db.exec(select(Project)).all())
+    current_count = db.exec(select(func.count(Project.id))).first() or 0
     limit_check = check_limit("projects", current_count)
 
     if not limit_check.get("allowed"):

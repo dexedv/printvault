@@ -79,7 +79,7 @@ def create_filament(
 ):
     """Create a new filament"""
     # Check license limit
-    current_count = db.exec(select(func.count(Filament.id)).select_from(Filament)).scalar() or 0
+    current_count = db.exec(select(func.count(Filament.id))).first() or 0
     limit_check = check_limit("filaments", current_count)
 
     if not limit_check.get("allowed"):
