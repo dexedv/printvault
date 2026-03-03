@@ -169,7 +169,7 @@ export default function LoadingScreen({ onComplete }: LoadingScreenProps) {
             <IconPrinter size={56} color="white" />
           </Box>
           <Title order={1} c="white" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>PrintVault</Title>
-          <Badge size="lg" variant="white" color="blue">v1.1.0</Badge>
+          <Badge size="lg" variant="white" color="blue">v1.1.2</Badge>
           <Text c="white" size="sm" opacity={0.8}>3D Print Management</Text>
         </Stack>
 
@@ -229,13 +229,10 @@ export default function LoadingScreen({ onComplete }: LoadingScreenProps) {
                 <Progress
                   value={step.progress}
                   size="xs"
-                  color="white"
-                  animated
-                  ml={36}
-                  style={{ background: 'rgba(255,255,255,0.2)' }}
                   color="blue"
                   animated
                   ml={36}
+                  style={{ background: 'rgba(255,255,255,0.2)' }}
                 />
               )}
             </Stack>

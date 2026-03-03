@@ -32,6 +32,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useProjectsStore } from '../store';
 import { projectsApi } from '../api/client';
+import LimitExceededModal from '../components/LimitExceededModal';
 import classes from './Projects.module.css';
 
 export default function Projects() {
@@ -39,6 +40,8 @@ export default function Projects() {
   const { projects, loading, error, searchQuery, setProjects, setLoading, setError, setSearchQuery, addProject, removeProject } = useProjectsStore();
   const [createModalOpened, { open: openCreateModal, close: closeCreateModal }] = useDisclosure(false);
   const [newProject, setNewProject] = useState({ name: '', description: '', tags: '' as string | string[] });
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
+  const [limitInfo, setLimitInfo] = useState<{ resource: string; current: number; limit: number }>({ resource: 'projects', current: 0, limit: 0 });
 
   const loadProjekte = async () => {
     setLoading(true);
@@ -68,7 +71,19 @@ export default function Projects() {
       closeCreateModal();
       setNewProject({ name: '', description: '', tags: '' });
     } catch (err: any) {
-      setError(err.message);
+      // Check if it's a limit error
+      if (err.response?.status === 403 && err.response?.data?.detail?.includes('Limit')) {
+        const msg = err.response.data.detail;
+        const match = msg.match(/bereits (\d+) von maximal (\d+)/);
+        setLimitInfo({
+          resource: 'projects',
+          current: match ? parseInt(match[1]) : projects.length,
+          limit: match ? parseInt(match[2]) : 2
+        });
+        setLimitModalOpen(true);
+      } else {
+        setError(err.message);
+      }
     }
   };
 
@@ -265,6 +280,14 @@ export default function Projects() {
           </Group>
         </Stack>
       </Modal>
+
+      <LimitExceededModal
+        opened={limitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
+        resource={limitInfo.resource}
+        current={limitInfo.current}
+        limit={limitInfo.limit}
+      />
     </Stack>
   );
 }

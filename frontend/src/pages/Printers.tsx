@@ -20,6 +20,7 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { IconPlus, IconDotsVertical, IconTrash, IconEdit, IconRefresh, IconPrinter, IconCloud, IconCloudOff } from '@tabler/icons-react';
 import { printersApi } from '../api/client';
+import LimitExceededModal from '../components/LimitExceededModal';
 import type { Printer } from '@shared/types';
 import classes from './Printers.module.css';
 
@@ -39,6 +40,8 @@ export default function Printers() {
     api_key: '',
     webcam_url: '',
   });
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
+  const [limitInfo, setLimitInfo] = useState<{ resource: string; current: number; limit: number }>({ resource: 'printers', current: 0, limit: 0 });
 
   const loadPrinters = async () => {
     setLoading(true);
@@ -81,8 +84,20 @@ export default function Printers() {
       }
       closeModal();
       resetForm();
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      // Check if it's a limit error
+      if (err.response?.status === 403 && err.response?.data?.detail?.includes('Limit')) {
+        const msg = err.response.data.detail;
+        const match = msg.match(/bereits (\d+) von maximal (\d+)/);
+        setLimitInfo({
+          resource: 'printers',
+          current: match ? parseInt(match[1]) : printers.length,
+          limit: match ? parseInt(match[2]) : 1
+        });
+        setLimitModalOpen(true);
+      } else {
+        console.error(err);
+      }
     }
   };
 
@@ -328,6 +343,14 @@ export default function Printers() {
           </Group>
         </Stack>
       </Modal>
+
+      <LimitExceededModal
+        opened={limitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
+        resource={limitInfo.resource}
+        current={limitInfo.current}
+        limit={limitInfo.limit}
+      />
     </Stack>
   );
 }

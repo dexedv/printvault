@@ -39,6 +39,7 @@ import {
   IconShoppingCart,
 } from '@tabler/icons-react';
 import { ordersApi, customersApi, Order, Customer } from '../api/client';
+import LimitExceededModal from '../components/LimitExceededModal';
 import classes from './Orders.module.css';
 
 const statusColors: Record<string, string> = {
@@ -94,6 +95,8 @@ export default function Orders() {
     notes: '',
     status: 'pending',
   });
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
+  const [limitInfo, setLimitInfo] = useState<{ resource: string; current: number; limit: number }>({ resource: 'orders', current: 0, limit: 0 });
 
   const loadOrders = async () => {
     setLoading(true);
@@ -191,8 +194,20 @@ export default function Orders() {
       }
       closeModal();
       loadOrders();
-    } catch (err) {
-      console.error('Failed to save order:', err);
+    } catch (err: any) {
+      // Check if it's a limit error
+      if (err.response?.status === 403 && err.response?.data?.detail?.includes('Limit')) {
+        const msg = err.response.data.detail;
+        const match = msg.match(/bereits (\d+) von maximal (\d+)/);
+        setLimitInfo({
+          resource: 'orders',
+          current: match ? parseInt(match[1]) : orders.length,
+          limit: match ? parseInt(match[2]) : 3
+        });
+        setLimitModalOpen(true);
+      } else {
+        console.error('Failed to save order:', err);
+      }
     }
   };
 
@@ -549,6 +564,14 @@ export default function Orders() {
           </Group>
         </Stack>
       </Modal>
+
+      <LimitExceededModal
+        opened={limitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
+        resource={limitInfo.resource}
+        current={limitInfo.current}
+        limit={limitInfo.limit}
+      />
     </Stack>
   );
 }

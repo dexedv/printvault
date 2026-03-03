@@ -34,6 +34,7 @@ import {
   IconUsers,
 } from '@tabler/icons-react';
 import { customersApi, Customer } from '../api/client';
+import LimitExceededModal from '../components/LimitExceededModal';
 import classes from './Customers.module.css';
 
 export default function Customers() {
@@ -54,6 +55,8 @@ export default function Customers() {
     address: '',
     notes: '',
   });
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
+  const [limitInfo, setLimitInfo] = useState<{ resource: string; current: number; limit: number }>({ resource: 'customers', current: 0, limit: 0 });
 
   const loadCustomers = async () => {
     setLoading(true);
@@ -112,8 +115,20 @@ export default function Customers() {
       }
       closeModal();
       loadCustomers();
-    } catch (err) {
-      console.error('Failed to save customer:', err);
+    } catch (err: any) {
+      // Check if it's a limit error
+      if (err.response?.status === 403 && err.response?.data?.detail?.includes('Limit')) {
+        const msg = err.response.data.detail;
+        const match = msg.match(/bereits (\d+) von maximal (\d+)/);
+        setLimitInfo({
+          resource: 'customers',
+          current: match ? parseInt(match[1]) : customers.length,
+          limit: match ? parseInt(match[2]) : 5
+        });
+        setLimitModalOpen(true);
+      } else {
+        console.error('Failed to save customer:', err);
+      }
     }
   };
 
@@ -326,6 +341,14 @@ export default function Customers() {
           </Group>
         </Stack>
       </Modal>
+
+      <LimitExceededModal
+        opened={limitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
+        resource={limitInfo.resource}
+        current={limitInfo.current}
+        limit={limitInfo.limit}
+      />
     </Stack>
   );
 }
